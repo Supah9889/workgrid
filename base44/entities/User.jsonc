@@ -1,0 +1,34 @@
+{
+  "name": "User",
+  "type": "object",
+  "properties": {
+    "role": {
+      "type": "string",
+      "enum": [
+        "super_admin",
+        "operator",
+        "employee"
+      ],
+      "default": "employee",
+      "description": "User role in the system"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active",
+      "description": "Whether the user account is active"
+    },
+    "profile_photo": {
+      "type": "string",
+      "description": "URL of the user's profile photo"
+    },
+    "phone": {
+      "type": "string",
+      "description": "User's phone number"
+    }
+  },
+  "required": []
+}

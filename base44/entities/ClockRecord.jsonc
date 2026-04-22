@@ -1,0 +1,34 @@
+{
+  "name": "ClockRecord",
+  "type": "object",
+  "properties": {
+    "employee_email": {
+      "type": "string",
+      "description": "Email of the employee"
+    },
+    "employee_name": {
+      "type": "string",
+      "description": "Name of the employee"
+    },
+    "clock_in": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Clock in timestamp"
+    },
+    "clock_out": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Clock out timestamp"
+    },
+    "date": {
+      "type": "string",
+      "format": "date",
+      "description": "Date of the clock record"
+    }
+  },
+  "required": [
+    "employee_email",
+    "clock_in",
+    "date"
+  ]
+}

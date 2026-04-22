@@ -1,0 +1,41 @@
+{
+  "name": "Notification",
+  "type": "object",
+  "properties": {
+    "recipient_email": {
+      "type": "string",
+      "description": "Email of the notification recipient"
+    },
+    "title": {
+      "type": "string",
+      "description": "Notification title"
+    },
+    "message": {
+      "type": "string",
+      "description": "Notification message body"
+    },
+    "type": {
+      "type": "string",
+      "enum": [
+        "info",
+        "warning",
+        "error",
+        "success"
+      ],
+      "default": "info"
+    },
+    "read": {
+      "type": "boolean",
+      "default": false
+    },
+    "link": {
+      "type": "string",
+      "description": "Optional link for the notification"
+    }
+  },
+  "required": [
+    "recipient_email",
+    "title",
+    "message"
+  ]
+}

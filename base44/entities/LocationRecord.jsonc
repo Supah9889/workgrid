@@ -1,0 +1,27 @@
+{
+  "name": "LocationRecord",
+  "type": "object",
+  "properties": {
+    "employee_email": {
+      "type": "string",
+      "description": "Email of the employee"
+    },
+    "employee_name": {
+      "type": "string",
+      "description": "Name of the employee"
+    },
+    "latitude": {
+      "type": "number",
+      "description": "Latitude coordinate"
+    },
+    "longitude": {
+      "type": "number",
+      "description": "Longitude coordinate"
+    }
+  },
+  "required": [
+    "employee_email",
+    "latitude",
+    "longitude"
+  ]
+}

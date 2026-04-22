@@ -1,0 +1,49 @@
+{
+  "name": "Task",
+  "type": "object",
+  "properties": {
+    "title": {
+      "type": "string",
+      "description": "Task title"
+    },
+    "description": {
+      "type": "string",
+      "description": "Task description"
+    },
+    "priority": {
+      "type": "string",
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "default": "medium",
+      "description": "Task priority level"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "in_progress",
+        "complete"
+      ],
+      "default": "pending",
+      "description": "Current task status"
+    },
+    "assigned_employee": {
+      "type": "string",
+      "description": "Email of the assigned employee"
+    },
+    "assigned_employee_name": {
+      "type": "string",
+      "description": "Name of the assigned employee"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Additional notes for the task"
+    }
+  },
+  "required": [
+    "title"
+  ]
+}

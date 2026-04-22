@@ -40,7 +40,31 @@
     },
     "notes": {
       "type": "string",
-      "description": "Additional notes for the task"
+      "description": "Employee notes visible to admin"
+    },
+    "reassignment_log": {
+      "type": "array",
+      "description": "History of reassignments",
+      "items": {
+        "type": "object",
+        "properties": {
+          "from_email": {
+            "type": "string"
+          },
+          "from_name": {
+            "type": "string"
+          },
+          "to_email": {
+            "type": "string"
+          },
+          "to_name": {
+            "type": "string"
+          },
+          "reassigned_at": {
+            "type": "string"
+          }
+        }
+      }
     }
   },
   "required": [

@@ -5,13 +5,14 @@ import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Users, Plus, Search } from 'lucide-react';
-import { toast } from 'sonner';
+import { useToast } from '@/components/ui/use-toast';
 import EmployeeTable from '@/components/employees/EmployeeTable';
 import AddEmployeeDialog from '@/components/employees/AddEmployeeDialog';
 
 export default function EmployeeManagement() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
 
@@ -26,7 +27,7 @@ export default function EmployeeManagement() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      toast.success('Role updated successfully');
+      toast({ title: 'Role updated successfully' });
     },
   });
 
@@ -68,7 +69,7 @@ export default function EmployeeManagement() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
-      toast.success('Employee deactivated and tasks unassigned');
+      toast({ title: 'Employee deactivated and tasks unassigned' });
     },
   });
 
@@ -78,7 +79,7 @@ export default function EmployeeManagement() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
-      toast.success('Employee reactivated');
+      toast({ title: 'Employee reactivated' });
     },
   });
 

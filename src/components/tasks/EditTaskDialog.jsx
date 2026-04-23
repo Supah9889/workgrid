@@ -30,8 +30,7 @@ export default function EditTaskDialog({ open, onOpenChange, task, employees = [
     setForm(f => ({ ...f, assigned_employee: email, assigned_employee_name: emp?.full_name || '' }));
   };
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     if (!form.title.trim() || !task?.id) return;
     setSaving(true);
 
@@ -61,7 +60,7 @@ export default function EditTaskDialog({ open, onOpenChange, task, employees = [
         <DialogHeader>
           <DialogTitle>Edit Task</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-4">
           <div className="space-y-1.5">
             <Label>Title *</Label>
             <Input value={form.title || ''} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} required />
@@ -105,12 +104,12 @@ export default function EditTaskDialog({ open, onOpenChange, task, employees = [
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={saving || !form.title?.trim()}>
+            <Button type="button" onClick={handleSubmit} disabled={saving || !form.title?.trim()}>
               {saving && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
               Save Changes
             </Button>
           </DialogFooter>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

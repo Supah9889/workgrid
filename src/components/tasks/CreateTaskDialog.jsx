@@ -14,8 +14,7 @@ export default function CreateTaskDialog({ open, onOpenChange, employees = [], o
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     if (!form.title.trim()) return;
     setSaving(true);
     await base44.entities.Task.create({
@@ -39,7 +38,7 @@ export default function CreateTaskDialog({ open, onOpenChange, employees = [], o
         <DialogHeader>
           <DialogTitle>Create Task</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-4">
           <div className="space-y-1.5">
             <Label>Title *</Label>
             <Input value={form.title} onChange={e => setForm(f => ({ ...f, title: e.target.value }))} placeholder="Task title" required />
@@ -72,12 +71,12 @@ export default function CreateTaskDialog({ open, onOpenChange, employees = [], o
           </div>
           <DialogFooter>
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>Cancel</Button>
-            <Button type="submit" disabled={saving || !form.title.trim()}>
+            <Button type="button" onClick={handleSubmit} disabled={saving || !form.title.trim()}>
               {saving && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
               Create Task
             </Button>
           </DialogFooter>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

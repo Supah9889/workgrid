@@ -11,21 +11,21 @@ import { Label } from '@/components/ui/label';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { base44 } from '@/api/base44Client';
-import { toast } from 'sonner';
+import { useToast } from '@/components/ui/use-toast';
 import { Loader2 } from 'lucide-react';
 
 export default function AddEmployeeDialog({ open, onOpenChange, onSuccess }) {
+  const { toast } = useToast();
   const [email, setEmail] = useState('');
   const [role, setRole] = useState('employee');
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     if (!email.trim()) return;
 
     setLoading(true);
     await base44.users.inviteUser(email.trim(), role === 'super_admin' ? 'admin' : 'user');
-    toast.success(`Invitation sent to ${email}`);
+    toast({ title: `Invitation sent to ${email}` });
     setEmail('');
     setRole('employee');
     onOpenChange(false);
@@ -39,7 +39,7 @@ export default function AddEmployeeDialog({ open, onOpenChange, onSuccess }) {
         <DialogHeader>
           <DialogTitle>Add New Employee</DialogTitle>
         </DialogHeader>
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <div className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email Address</Label>
             <Input
@@ -68,12 +68,12 @@ export default function AddEmployeeDialog({ open, onOpenChange, onSuccess }) {
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="button" onClick={handleSubmit} disabled={loading}>
               {loading && <Loader2 className="w-4 h-4 mr-2 animate-spin" />}
               Send Invitation
             </Button>
           </DialogFooter>
-        </form>
+        </div>
       </DialogContent>
     </Dialog>
   );

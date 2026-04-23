@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { Plus, MapPin, Clock, Package, Building2, ChevronDown, ChevronUp, User } from 'lucide-react';
 import { PriorityBadge, StatusBadge } from '@/components/tasks/TaskBadges';
@@ -115,7 +116,13 @@ function TaskCard({ task, employees }) {
 
 export default function SuperAdminDashboard() {
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const [createOpen, setCreateOpen] = useState(false);
+
+  const { data: clockRecords = [] } = useQuery({
+    queryKey: ['dash-clock-today'],
+    queryFn: () => base44.entities.ClockRecord.list(),
+  });
 
   const { data: allTasks = [], isLoading } = useQuery({
     queryKey: ['dashboard-tasks'],
@@ -140,6 +147,13 @@ export default function SuperAdminDashboard() {
   const unassigned = allTasks.filter(t => !t.assigned_to);
   const assigned = allTasks.filter(t => !!t.assigned_to);
 
+  const todayStr = new Date().toISOString().split('T')[0];
+  const clockedInToday = clockRecords.filter(r => r.date === todayStr && r.punch_in_time && !r.punch_out_time).length;
+  const activeDeliveries = allTasks.filter(t => t.status === 'picked_up' || t.status === 'en_route').length;
+  const deliveredToday = allTasks.filter(t => t.status === 'delivered' && t.created_date?.startsWith(todayStr)).length;
+  const oobAlerts = clockRecords.filter(r => r.date === todayStr && r.flagged).length;
+  const unassignedTasks = allTasks.filter(t => !t.assigned_to).length;
+
   return (
     <div className="min-h-screen bg-[#0f172a]">
       {/* Header */}
@@ -152,6 +166,26 @@ export default function SuperAdminDashboard() {
             <span className="text-orange-400"> · {unassigned.length} unassigned</span>
           )}
         </p>
+      </div>
+
+      {/* Stats bar */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 mb-6 px-4 pt-4">
+        {[
+          { label: 'Clocked In', value: clockedInToday, color: 'text-green-400', bg: 'bg-green-500/10 border-green-500/20', path: '/clock-records' },
+          { label: 'Active Deliveries', value: activeDeliveries, color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20', path: '/tasks' },
+          { label: 'Delivered Today', value: deliveredToday, color: 'text-emerald-400', bg: 'bg-emerald-500/10 border-emerald-500/20', path: '/tasks' },
+          { label: 'OOB Alerts', value: oobAlerts, color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/20', path: '/audit-log' },
+          { label: 'Unassigned', value: unassignedTasks, color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/20', path: '/tasks' },
+        ].map(stat => (
+          <div
+            key={stat.label}
+            onClick={() => navigate(stat.path)}
+            className={`${stat.bg} border rounded-xl p-4 cursor-pointer hover:opacity-80 transition-opacity`}
+          >
+            <p className={`text-2xl font-bold ${stat.color}`}>{stat.value}</p>
+            <p className="text-slate-400 text-xs mt-1">{stat.label}</p>
+          </div>
+        ))}
       </div>
 
       {/* Task list */}

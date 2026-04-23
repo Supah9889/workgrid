@@ -11,7 +11,7 @@ export default function RoleGuard({ allowedRoles, children }) {
   if (!allowedRoles.includes(userRole)) {
     // Redirect to appropriate home
     if (userRole === 'super_admin') return <Navigate to="/dashboard" replace />;
-    if (userRole === 'operator') return <Navigate to="/tasks" replace />;
+    if (userRole === 'operator') return <Navigate to="/dashboard" replace />;
     return <Navigate to="/my-tasks" replace />;
   }
 

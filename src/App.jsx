@@ -18,6 +18,7 @@ import TaskBoard from '@/pages/TaskBoard';
 import MyTasks from '@/pages/MyTasks';
 import Locations from '@/pages/Locations';
 import ClockRecords from '@/pages/ClockRecords';
+import EmployeeProfile from '@/pages/EmployeeProfile';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
@@ -48,7 +49,7 @@ const AuthenticatedApp = () => {
         <Route path="/" element={<RoleRouter />} />
         <Route element={<AppLayout />}>
           <Route path="/dashboard" element={
-            <RoleGuard allowedRoles={['super_admin']}>
+            <RoleGuard allowedRoles={['super_admin', 'operator']}>
               <SuperAdminDashboard />
             </RoleGuard>
           } />
@@ -80,6 +81,11 @@ const AuthenticatedApp = () => {
           <Route path="/clock-records" element={
             <RoleGuard allowedRoles={['super_admin', 'operator']}>
               <ClockRecords />
+            </RoleGuard>
+          } />
+          <Route path="/employee-profile" element={
+            <RoleGuard allowedRoles={['super_admin']}>
+              <EmployeeProfile />
             </RoleGuard>
           } />
         </Route>

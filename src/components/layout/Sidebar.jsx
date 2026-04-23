@@ -13,19 +13,32 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
-  Hexagon
+  Hexagon,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
-const NAV_ITEMS = [
-  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['super_admin'] },
-  { path: '/employees', label: 'Employees', icon: Users, roles: ['super_admin'] },
-  { path: '/permissions', label: 'Permissions', icon: Shield, roles: ['super_admin'] },
-  { path: '/tasks', label: 'Task Board', icon: ClipboardList, roles: ['super_admin', 'operator'], permission: 'view_all_tasks' },
-  { path: '/my-tasks', label: 'My Tasks', icon: ListTodo, roles: ['employee'] },
-  { path: '/locations', label: 'Locations', icon: MapPin, roles: ['super_admin', 'operator'], permission: 'view_employee_locations' },
-  { path: '/clock-records', label: 'Clock Records', icon: Clock, roles: ['super_admin', 'operator'], permission: 'view_clock_records' },
+// Super Admin nav
+const SUPER_ADMIN_NAV = [
+  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/tasks', label: 'Task Board', icon: ClipboardList },
+  { path: '/clock-records', label: 'Time & Attendance', icon: Clock },
+  { path: '/locations', label: 'Location Board', icon: MapPin },
+  { path: '/employees', label: 'Employees', icon: Users },
+  { path: '/permissions', label: 'Permissions', icon: Shield },
+];
+
+// Operator nav (some items gated by permissions)
+const OPERATOR_NAV = [
+  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { path: '/tasks', label: 'Task Board', icon: ClipboardList, permission: 'view_all_tasks' },
+  { path: '/clock-records', label: 'Time & Attendance', icon: Clock, permission: 'view_clock_records' },
+  { path: '/locations', label: 'Location Board', icon: MapPin, permission: 'view_employee_locations' },
+];
+
+// Employee nav
+const EMPLOYEE_NAV = [
+  { path: '/my-tasks', label: 'My Tasks', icon: ListTodo },
 ];
 
 export default function Sidebar() {
@@ -36,83 +49,87 @@ export default function Sidebar() {
 
   const userRole = user?.role || 'employee';
 
-  const visibleItems = NAV_ITEMS.filter(item => {
-    if (!item.roles.includes(userRole)) return false;
-    if (item.permission && userRole === 'operator') {
+  let navItems = [];
+  if (userRole === 'super_admin') navItems = SUPER_ADMIN_NAV;
+  else if (userRole === 'operator') {
+    navItems = OPERATOR_NAV.filter(item => {
+      if (!item.permission) return true;
       return hasPermission(permissions, userRole, item.permission);
-    }
-    return true;
-  });
+    });
+  } else {
+    navItems = EMPLOYEE_NAV;
+  }
+
+  const isActive = (path) =>
+    location.pathname === path || (path === '/dashboard' && location.pathname === '/');
 
   return (
     <aside className={cn(
-      "h-screen bg-card border-r border-border flex flex-col transition-all duration-300 sticky top-0",
-      collapsed ? "w-[72px]" : "w-[260px]"
+      "h-screen flex flex-col transition-all duration-200 sticky top-0 z-30",
+      "bg-sidebar border-r border-sidebar-border",
+      collapsed ? "w-[56px]" : "w-[220px]"
     )}>
       {/* Logo */}
-      <div className="h-16 flex items-center px-5 border-b border-border gap-3">
-        <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center flex-shrink-0">
-          <Hexagon className="w-4 h-4 text-primary-foreground" />
+      <div className="h-11 flex items-center px-4 border-b border-sidebar-border gap-2.5 flex-shrink-0">
+        <div className="w-6 h-6 rounded-md bg-sidebar-primary flex items-center justify-center flex-shrink-0">
+          <Hexagon className="w-3.5 h-3.5 text-sidebar-primary-foreground" />
         </div>
         {!collapsed && (
-          <span className="text-lg font-bold tracking-tight">
-            Work<span className="text-primary">Grid</span>
+          <span className="text-sm font-bold tracking-tight text-sidebar-foreground">
+            Work<span className="text-sidebar-primary">Grid</span>
           </span>
         )}
       </div>
 
       {/* Navigation */}
-      <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
-        {visibleItems.map(item => {
+      <nav className="flex-1 py-3 px-2 space-y-0.5 overflow-y-auto">
+        {navItems.map(item => {
           const Icon = item.icon;
-          const isActive = location.pathname === item.path || (item.path === '/dashboard' && location.pathname === '/');
+          const active = isActive(item.path);
           return (
             <Link
               key={item.path}
               to={item.path}
               className={cn(
-                "flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm font-medium transition-all duration-200",
-                isActive
-                  ? "bg-primary text-primary-foreground shadow-sm"
-                  : "text-muted-foreground hover:bg-muted hover:text-foreground"
+                "flex items-center gap-2.5 px-2.5 py-2 rounded-md text-sm font-medium transition-all",
+                active
+                  ? "bg-sidebar-primary text-sidebar-primary-foreground"
+                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
               )}
+              title={collapsed ? item.label : undefined}
             >
-              <Icon className="w-[18px] h-[18px] flex-shrink-0" />
-              {!collapsed && <span>{item.label}</span>}
+              <Icon className="w-4 h-4 flex-shrink-0" />
+              {!collapsed && <span className="truncate">{item.label}</span>}
             </Link>
           );
         })}
       </nav>
 
-      {/* User + Collapse */}
-      <div className="border-t border-border p-3 space-y-2">
+      {/* Bottom */}
+      <div className="border-t border-sidebar-border p-2 space-y-1 flex-shrink-0">
         {!collapsed && user && (
-          <div className="flex items-center gap-3 px-3 py-2">
-            <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-semibold text-primary">
-              {(user.full_name || user.email || '?')[0].toUpperCase()}
-            </div>
-            <div className="min-w-0 flex-1">
-              <p className="text-sm font-medium truncate">{user.full_name || user.email}</p>
-              <p className="text-xs text-muted-foreground capitalize">{(userRole || '').replace('_', ' ')}</p>
-            </div>
+          <div className="px-2.5 py-1.5">
+            <p className="text-xs font-medium truncate text-sidebar-foreground">{user.full_name || user.email}</p>
+            <p className="text-[10px] text-sidebar-foreground/60 capitalize">{(userRole || '').replace('_', ' ')}</p>
           </div>
         )}
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1">
           <button
             onClick={() => base44.auth.logout()}
             className={cn(
-              "flex items-center gap-2 px-3 py-2 rounded-lg text-sm text-muted-foreground hover:bg-destructive/10 hover:text-destructive transition-colors flex-1",
+              "flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs text-sidebar-foreground/70 hover:bg-destructive/20 hover:text-red-400 transition-colors flex-1",
               collapsed && "justify-center"
             )}
+            title={collapsed ? 'Logout' : undefined}
           >
-            <LogOut className="w-4 h-4" />
+            <LogOut className="w-3.5 h-3.5" />
             {!collapsed && <span>Logout</span>}
           </button>
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="p-2 rounded-lg text-muted-foreground hover:bg-muted transition-colors"
+            className="p-1.5 rounded-md text-sidebar-foreground/60 hover:bg-sidebar-accent transition-colors"
           >
-            {collapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+            {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
           </button>
         </div>
       </div>

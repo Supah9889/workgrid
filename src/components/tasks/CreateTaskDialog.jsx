@@ -8,8 +8,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { base44 } from '@/api/base44Client';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
+import { logActivity } from '@/lib/activityLogger';
+import { useAuth } from '@/lib/AuthContext';
 
 export default function CreateTaskDialog({ open, onOpenChange, employees, onCreated }) {
+  const { user } = useAuth();
   const [form, setForm] = useState({ title: '', description: '', priority: 'medium', assigned_employee: '', assigned_employee_name: '' });
   const [loading, setLoading] = useState(false);
 
@@ -33,8 +36,19 @@ export default function CreateTaskDialog({ open, onOpenChange, employees, onCrea
         title: 'New Task Assigned',
         message: `You have been assigned a new task: "${form.title}"`,
         type: 'info',
+        link: '/my-tasks',
       });
     }
+
+    // Log activity
+    await logActivity(
+      'task_created',
+      form.assigned_employee
+        ? `Task "${form.title}" created and assigned to ${taskData.assigned_employee_name || form.assigned_employee}`
+        : `Task "${form.title}" created (unassigned)`,
+      user?.email, user?.full_name,
+      { entity_id: task.id, entity_type: 'Task' }
+    );
 
     toast.success('Task created');
     setForm({ title: '', description: '', priority: 'medium', assigned_employee: '', assigned_employee_name: '' });

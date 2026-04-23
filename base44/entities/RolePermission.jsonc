@@ -5,34 +5,50 @@
     "role": {
       "type": "string",
       "enum": [
-        "operator"
+        "operator",
+        "employee"
       ],
       "description": "The role these permissions apply to"
     },
     "view_all_tasks": {
       "type": "boolean",
-      "default": true,
-      "description": "Can view all tasks"
+      "default": true
     },
     "create_tasks": {
       "type": "boolean",
-      "default": true,
-      "description": "Can create new tasks"
+      "default": true
     },
     "reassign_tasks": {
       "type": "boolean",
-      "default": false,
-      "description": "Can reassign tasks to other employees"
+      "default": false
     },
     "view_employee_locations": {
       "type": "boolean",
-      "default": false,
-      "description": "Can view employee locations"
+      "default": false
     },
     "view_clock_records": {
       "type": "boolean",
-      "default": false,
-      "description": "Can view clock in/out records"
+      "default": false
+    },
+    "view_own_location": {
+      "type": "boolean",
+      "default": false
+    },
+    "view_own_clock_records": {
+      "type": "boolean",
+      "default": true
+    },
+    "access_notifications": {
+      "type": "boolean",
+      "default": true
+    },
+    "add_notes_to_tasks": {
+      "type": "boolean",
+      "default": true
+    },
+    "view_activity_feed": {
+      "type": "boolean",
+      "default": false
     }
   },
   "required": [

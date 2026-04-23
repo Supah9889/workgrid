@@ -15,7 +15,8 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table';
-import { MoreHorizontal, ShieldCheck, Shield, UserCircle, UserX, ArrowUpDown } from 'lucide-react';
+import { MoreHorizontal, ShieldCheck, Shield, UserCircle, UserX, ArrowUpDown, ExternalLink } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { format } from 'date-fns';
 
 const ROLE_BADGES = {
@@ -31,6 +32,7 @@ const ROLE_ICONS = {
 };
 
 export default function EmployeeTable({ users, onChangeRole, onDeactivate, onActivate }) {
+  const navigate = useNavigate();
   return (
     <div className="rounded-xl border border-border overflow-hidden">
       <Table>
@@ -98,6 +100,10 @@ export default function EmployeeTable({ users, onChangeRole, onDeactivate, onAct
                         </DropdownMenuItem>
                         <DropdownMenuItem onClick={() => onChangeRole(u, 'employee')} disabled={u.role === 'employee'}>
                           <UserCircle className="w-4 h-4 mr-2" /> Set as Employee
+                        </DropdownMenuItem>
+                        <DropdownMenuSeparator />
+                        <DropdownMenuItem onClick={() => navigate(`/employee-profile?id=${u.id}`)}>
+                          <ExternalLink className="w-4 h-4 mr-2" /> View Profile
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
                         {isInactive ? (

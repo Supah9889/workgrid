@@ -1,0 +1,48 @@
+{
+  "name": "ActivityFeed",
+  "type": "object",
+  "properties": {
+    "event_type": {
+      "type": "string",
+      "enum": [
+        "task_created",
+        "task_updated",
+        "task_reassigned",
+        "task_completed",
+        "employee_clocked_in",
+        "employee_clocked_out",
+        "location_updated",
+        "permission_changed"
+      ],
+      "description": "Type of event"
+    },
+    "actor_email": {
+      "type": "string",
+      "description": "Who triggered the event"
+    },
+    "actor_name": {
+      "type": "string",
+      "description": "Display name of actor"
+    },
+    "description": {
+      "type": "string",
+      "description": "Human-readable event description"
+    },
+    "entity_id": {
+      "type": "string",
+      "description": "ID of related entity"
+    },
+    "entity_type": {
+      "type": "string",
+      "description": "Type of related entity (Task, ClockRecord, etc.)"
+    },
+    "metadata": {
+      "type": "object",
+      "description": "Extra data for the event"
+    }
+  },
+  "required": [
+    "event_type",
+    "description"
+  ]
+}

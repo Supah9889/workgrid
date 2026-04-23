@@ -7,7 +7,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
 import { PriorityBadge, StatusBadge } from '@/components/tasks/TaskBadges';
 import { ListTodo, ChevronRight, Loader2 } from 'lucide-react';
-import { toast } from 'sonner';
+import { useToast } from '@/components/ui/use-toast';
 import { format } from 'date-fns';
 import ClockButton from '@/components/clock/ClockButton';
 
@@ -17,6 +17,7 @@ const STATUS_NEXT = {
 };
 
 function TaskCard({ task, onUpdated }) {
+  const { toast } = useToast();
   const [notes, setNotes] = useState(task.notes || '');
   const [saving, setSaving] = useState(false);
   const [expanded, setExpanded] = useState(false);
@@ -26,7 +27,7 @@ function TaskCard({ task, onUpdated }) {
     if (!advance) return;
     setSaving(true);
     await base44.entities.Task.update(task.id, { status: advance.next });
-    toast.success(`Task marked as ${advance.next.replace('_', ' ')}`);
+    toast({ title: `Task marked as ${advance.next.replace('_', ' ')}` });
     onUpdated();
     setSaving(false);
   };
@@ -34,7 +35,7 @@ function TaskCard({ task, onUpdated }) {
   const handleSaveNotes = async () => {
     setSaving(true);
     await base44.entities.Task.update(task.id, { notes });
-    toast.success('Notes saved');
+    toast({ title: 'Notes saved' });
     onUpdated();
     setSaving(false);
   };

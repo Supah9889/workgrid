@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Clock, LogIn, LogOut, MapPin, Loader2 } from 'lucide-react';
 import { base44 } from '@/api/base44Client';
-import { toast } from 'sonner';
+import { useToast } from '@/components/ui/use-toast';
 import { format, differenceInSeconds } from 'date-fns';
 import { logActivity } from '@/lib/activityLogger';
 
@@ -24,6 +24,7 @@ function ElapsedTimer({ since }) {
 }
 
 export default function ClockButton({ user, onStatusChange }) {
+  const { toast } = useToast();
   const [clockRecord, setClockRecord] = useState(null);
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
@@ -92,7 +93,7 @@ export default function ClockButton({ user, onStatusChange }) {
     startLocationTracking(record.id);
     onStatusChange?.('clocked_in');
     await logActivity('employee_clocked_in', `${user.full_name || user.email} clocked in`, user.email, user.full_name, { entity_id: record.id, entity_type: 'ClockRecord' });
-    toast.success('Clocked in successfully');
+    toast({ title: 'Clocked in successfully' });
     setActionLoading(false);
   };
 
@@ -110,7 +111,7 @@ export default function ClockButton({ user, onStatusChange }) {
     setClockRecord(null);
     onStatusChange?.('clocked_out');
     await logActivity('employee_clocked_out', `${user.full_name || user.email} clocked out (${Math.round(totalHours * 100) / 100}h)`, user.email, user.full_name, { entity_id: clockRecord.id, entity_type: 'ClockRecord' });
-    toast.success('Clocked out. Have a great day!');
+    toast({ title: 'Clocked out. Have a great day!' });
     setActionLoading(false);
   };
 

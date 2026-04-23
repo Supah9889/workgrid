@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { usePermissions } from '@/lib/permissions.jsx';
+import { useToast } from '@/components/ui/use-toast';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Shield, Eye, PlusCircle, ArrowRightLeft, MapPin, Clock, Bell, FileText, Activity, Lock } from 'lucide-react';
@@ -104,6 +105,7 @@ function PermissionCell({ type, value, onChange }) {
 
 export default function PermissionsBoard() {
   const { permissionsByRole, loading, updatePermission } = usePermissions();
+  const { toast } = useToast();
   const [pending, setPending] = useState(null); // { role, key, value, label }
 
   if (loading) {
@@ -120,8 +122,13 @@ export default function PermissionsBoard() {
 
   const confirmChange = async () => {
     if (!pending) return;
-    await updatePermission(pending.role, pending.key, pending.value);
-    setPending(null);
+    try {
+      await updatePermission(pending.role, pending.key, pending.value);
+      setPending(null);
+    } catch (err) {
+      toast({ title: 'Something went wrong', description: err.message, variant: 'destructive' });
+      setPending(null);
+    }
   };
 
   const operatorPerms = permissionsByRole?.operator;

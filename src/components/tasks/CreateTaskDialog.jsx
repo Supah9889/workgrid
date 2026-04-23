@@ -43,12 +43,16 @@ export default function CreateTaskDialog({ open, onOpenChange, employees = [], o
   const handleSubmit = async () => {
     if (!form.title.trim() || saving) return;
     setSaving(true);
-    const task = await base44.entities.Task.create({ ...form, status: 'pending' });
-    if (form.assigned_to) await notifyTaskAssigned(task, form.assigned_to);
-    setForm(EMPTY_FORM);
+    try {
+      const task = await base44.entities.Task.create({ ...form, status: 'pending' });
+      if (form.assigned_to) await notifyTaskAssigned(task, form.assigned_to);
+      setForm(EMPTY_FORM);
+      onOpenChange(false);
+      onCreated?.();
+    } catch (err) {
+      toast({ title: 'Something went wrong', description: err.message, variant: 'destructive' });
+    }
     setSaving(false);
-    onOpenChange(false);
-    onCreated?.();
   };
 
   const inputCls = 'bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500 focus:border-blue-500';

@@ -24,7 +24,7 @@ export default function EmployeeProfile() {
   const [editMode, setEditMode] = useState(false);
   const [editRole, setEditRole] = useState('');
 
-  const { data: employee, refetch: refetchEmp } = useQuery({
+  const { data: employee, refetch: refetchEmp, isLoading: empLoading, isError: empError } = useQuery({
     queryKey: ['emp-profile', employeeId],
     queryFn: () => base44.entities.User.list().then(users => users.find(u => u.id === employeeId)),
     enabled: !!employeeId,
@@ -75,13 +75,27 @@ export default function EmployeeProfile() {
     refetchEmp();
   };
 
-  if (!employee) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (empError) return (
+    <div className="flex flex-col items-center justify-center h-64 gap-3">
+      <p className="text-destructive font-medium">Failed to load data</p>
+      <p className="text-muted-foreground text-sm">Check your connection and refresh the page</p>
+    </div>
+  );
+
+  if (empLoading) return (
+    <div className="flex items-center justify-center h-64">
+      <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
+    </div>
+  );
+
+  if (!employee) return (
+    <div className="flex flex-col items-center justify-center h-64 gap-3">
+      <p className="text-muted-foreground">Employee not found</p>
+      <button onClick={() => navigate(-1)} className="text-primary text-sm underline">
+        Go back
+      </button>
+    </div>
+  );
 
   // Group clock records by day
   const clockByDay = {};

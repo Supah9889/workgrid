@@ -153,7 +153,7 @@ export default function SuperAdminDashboard() {
     queryFn: () => base44.entities.ClockRecord.list(),
   });
 
-  const { data: allTasks = [], isLoading } = useQuery({
+  const { data: allTasks = [], isLoading, isError } = useQuery({
     queryKey: ['dashboard-tasks'],
     queryFn: () => base44.entities.Task.list('-created_date', 200),
   });
@@ -179,7 +179,7 @@ export default function SuperAdminDashboard() {
   const todayStr = new Date().toISOString().split('T')[0];
   const clockedInToday = clockRecords.filter(r => r.date === todayStr && r.punch_in_time && !r.punch_out_time).length;
   const activeDeliveries = allTasks.filter(t => t.status === 'picked_up' || t.status === 'en_route').length;
-  const deliveredToday = allTasks.filter(t => t.status === 'delivered' && t.created_date?.startsWith(todayStr)).length;
+  const deliveredToday = allTasks.filter(t => t.status === 'delivered' && (t.updated_date?.startsWith(todayStr) || t.created_date?.startsWith(todayStr))).length;
   const oobAlerts = clockRecords.filter(r => r.date === todayStr && r.flagged).length;
   const unassignedTasks = allTasks.filter(t => !t.assigned_to).length;
 
@@ -219,7 +219,12 @@ export default function SuperAdminDashboard() {
 
       {/* Task list */}
       <div className="px-4 py-4 pb-24 space-y-3">
-        {isLoading ? (
+        {isError ? (
+          <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
+            <p className="text-red-400 font-medium">Failed to load tasks</p>
+            <p className="text-slate-500 text-sm">Check your connection and refresh the page</p>
+          </div>
+        ) : isLoading ? (
           <div className="flex justify-center py-24">
             <div className="w-8 h-8 border-4 border-slate-700 border-t-blue-500 rounded-full animate-spin" />
           </div>

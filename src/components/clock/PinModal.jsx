@@ -96,7 +96,7 @@ export default function PinModal({ title = 'Enter Your PIN', onSuccess, onCancel
       <button
         onClick={onCancel}
         disabled={checking}
-        className="mt-8 text-slate-500 text-sm hover:text-slate-300 transition-colors disabled:opacity-40"
+        className="mt-8 py-3 px-6 text-slate-500 text-sm hover:text-slate-300 transition-colors disabled:opacity-40 rounded-xl hover:bg-slate-800/50"
       >
         Cancel
       </button>

@@ -8,6 +8,16 @@ import { Users, Plus, Search } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import EmployeeTable from '@/components/employees/EmployeeTable';
 import AddEmployeeDialog from '@/components/employees/AddEmployeeDialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 export default function EmployeeManagement() {
   const { user } = useAuth();
@@ -15,8 +25,9 @@ export default function EmployeeManagement() {
   const { toast } = useToast();
   const [search, setSearch] = useState('');
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [pendingDeactivate, setPendingDeactivate] = useState(null);
 
-  const { data: users = [], isLoading } = useQuery({
+  const { data: users = [], isLoading, isError } = useQuery({
     queryKey: ['users'],
     queryFn: () => base44.entities.User.list(),
   });
@@ -29,14 +40,15 @@ export default function EmployeeManagement() {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       toast({ title: 'Role updated successfully' });
     },
+    onError: (err) => {
+      toast({ title: 'Something went wrong', description: err.message, variant: 'destructive' });
+    },
   });
 
   const deactivateMutation = useMutation({
     mutationFn: async (targetUser) => {
-      // Deactivate the user
       await base44.entities.User.update(targetUser.id, { status: 'inactive' });
 
-      // Flag their tasks as unassigned
       const tasks = await base44.entities.Task.filter({ assigned_employee: targetUser.email });
       for (const task of tasks) {
         if (task.status !== 'complete') {
@@ -47,7 +59,6 @@ export default function EmployeeManagement() {
         }
       }
 
-      // Notify super admins
       const admins = users.filter(u => u.role === 'super_admin' && u.email !== user?.email);
       for (const admin of admins) {
         await base44.entities.Notification.create({
@@ -58,7 +69,6 @@ export default function EmployeeManagement() {
         });
       }
 
-      // Also notify the current admin
       await base44.entities.Notification.create({
         recipient_email: user?.email,
         title: 'Employee Deactivated',
@@ -71,6 +81,9 @@ export default function EmployeeManagement() {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       toast({ title: 'Employee deactivated and tasks unassigned' });
     },
+    onError: (err) => {
+      toast({ title: 'Something went wrong', description: err.message, variant: 'destructive' });
+    },
   });
 
   const activateMutation = useMutation({
@@ -80,6 +93,9 @@ export default function EmployeeManagement() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
       toast({ title: 'Employee reactivated' });
+    },
+    onError: (err) => {
+      toast({ title: 'Something went wrong', description: err.message, variant: 'destructive' });
     },
   });
 
@@ -91,6 +107,13 @@ export default function EmployeeManagement() {
       (u.role || '').toLowerCase().includes(term)
     );
   });
+
+  if (isError) return (
+    <div className="flex flex-col items-center justify-center h-64 gap-3">
+      <p className="text-destructive font-medium">Failed to load data</p>
+      <p className="text-muted-foreground text-sm">Check your connection and refresh the page</p>
+    </div>
+  );
 
   return (
     <div className="p-8 max-w-6xl mx-auto">
@@ -128,7 +151,7 @@ export default function EmployeeManagement() {
         <EmployeeTable
           users={filteredUsers}
           onChangeRole={(u, newRole) => changeRoleMutation.mutate({ userId: u.id, newRole })}
-          onDeactivate={(u) => deactivateMutation.mutate(u)}
+          onDeactivate={(u) => setPendingDeactivate(u)}
           onActivate={(u) => activateMutation.mutate(u)}
         />
       )}
@@ -138,6 +161,28 @@ export default function EmployeeManagement() {
         onOpenChange={setShowAddDialog}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ['users'] })}
       />
+
+      <AlertDialog open={!!pendingDeactivate} onOpenChange={(open) => !open && setPendingDeactivate(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Deactivate {pendingDeactivate?.full_name || pendingDeactivate?.email}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              Their active tasks will be unassigned. This action can be reversed by reactivating them later.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              onClick={() => { deactivateMutation.mutate(pendingDeactivate); setPendingDeactivate(null); }}
+            >
+              Deactivate
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

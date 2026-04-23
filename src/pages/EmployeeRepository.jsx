@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Search, Plus, Mail, Phone, UserCircle, MessageSquare, ClipboardList } from 'lucide-react';
+import { Search, Plus, Mail, Phone, UserCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AddEmployeeDialog from '@/components/employees/AddEmployeeDialog';
 
@@ -22,7 +22,7 @@ function StatusDot({ clockedIn }) {
   );
 }
 
-function EmployeeCard({ emp, isClockedIn, onViewProfile, onMessage }) {
+function EmployeeCard({ emp, isClockedIn, onViewProfile }) {
   const initials = (emp.full_name || emp.email || '?')
     .split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
 
@@ -64,12 +64,9 @@ function EmployeeCard({ emp, isClockedIn, onViewProfile, onMessage }) {
       </div>
 
       {/* Actions */}
-      <div className="flex gap-2 pt-1">
-        <Button size="sm" variant="outline" className="flex-1 text-xs h-7 gap-1" onClick={() => onViewProfile(emp)}>
-          <UserCircle className="w-3 h-3" /> Profile
-        </Button>
-        <Button size="sm" variant="outline" className="flex-1 text-xs h-7 gap-1" onClick={() => onMessage(emp)}>
-          <MessageSquare className="w-3 h-3" /> Message
+      <div className="pt-1">
+        <Button size="sm" variant="outline" className="w-full text-xs h-10 gap-1" onClick={() => onViewProfile(emp)}>
+          <UserCircle className="w-3.5 h-3.5" /> View Profile
         </Button>
       </div>
     </div>
@@ -84,7 +81,7 @@ export default function EmployeeRepository() {
   const [filter, setFilter] = useState('all');
   const [showAddDialog, setShowAddDialog] = useState(false);
 
-  const { data: users = [] } = useQuery({
+  const { data: users = [], isLoading, isError } = useQuery({
     queryKey: ['users'],
     queryFn: () => base44.entities.User.list(),
   });
@@ -119,6 +116,19 @@ export default function EmployeeRepository() {
     { key: 'admins', label: 'Admins' },
     { key: 'employees', label: 'Employees' },
   ];
+
+  if (isLoading) return (
+    <div className="flex items-center justify-center h-64">
+      <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
+    </div>
+  );
+
+  if (isError) return (
+    <div className="flex flex-col items-center justify-center h-64 gap-3">
+      <p className="text-destructive font-medium">Failed to load data</p>
+      <p className="text-muted-foreground text-sm">Check your connection and refresh the page</p>
+    </div>
+  );
 
   return (
     <div className="p-6 max-w-6xl mx-auto">
@@ -169,8 +179,7 @@ export default function EmployeeRepository() {
             key={emp.id}
             emp={emp}
             isClockedIn={clockedInEmails.has(emp.email)}
-            onViewProfile={() => navigate(`/employee-profile?id=${emp.id}`)}
-            onMessage={() => {}}
+            onViewProfile={() => navigate(`/employees/${emp.id}`)}
           />
         ))}
         {filtered.length === 0 && (

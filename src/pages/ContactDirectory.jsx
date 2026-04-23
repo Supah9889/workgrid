@@ -98,7 +98,7 @@ function ContactCard({ person, canEdit, onSave }) {
       {canEdit && !editing && (
         <button
           onClick={() => setEditing(true)}
-          className="p-1.5 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors flex-shrink-0"
+          className="p-3 rounded-md text-muted-foreground hover:bg-muted hover:text-foreground transition-colors flex-shrink-0"
         >
           <Pencil className="w-3.5 h-3.5" />
         </button>
@@ -115,7 +115,7 @@ export default function ContactDirectory() {
 
   const isAdmin = user?.role === 'super_admin' || user?.role === 'operator';
 
-  const { data: allUsers = [], isLoading } = useQuery({
+  const { data: allUsers = [], isLoading, isError } = useQuery({
     queryKey: ['contact-directory-users'],
     queryFn: () => base44.entities.User.list(),
   });
@@ -137,9 +137,13 @@ export default function ContactDirectory() {
   });
 
   const handleSave = async (entityId, updates) => {
-    await base44.entities.User.update(entityId, updates);
-    queryClient.invalidateQueries({ queryKey: ['contact-directory-users'] });
-    toast({ title: 'Contact info updated' });
+    try {
+      await base44.entities.User.update(entityId, updates);
+      queryClient.invalidateQueries({ queryKey: ['contact-directory-users'] });
+      toast({ title: 'Contact info updated' });
+    } catch (err) {
+      toast({ title: 'Something went wrong', description: err.message, variant: 'destructive' });
+    }
   };
 
   return (
@@ -160,7 +164,12 @@ export default function ContactDirectory() {
         />
       )}
 
-      {isLoading ? (
+      {isError ? (
+        <div className="flex flex-col items-center justify-center h-64 gap-3">
+          <p className="text-destructive font-medium">Failed to load data</p>
+          <p className="text-muted-foreground text-sm">Check your connection and refresh the page</p>
+        </div>
+      ) : isLoading ? (
         <div className="flex justify-center py-16">
           <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
         </div>

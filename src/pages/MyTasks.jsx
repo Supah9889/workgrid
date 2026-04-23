@@ -175,7 +175,7 @@ export default function MyTasks() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: tasks = [], isLoading } = useQuery({
+  const { data: tasks = [], isLoading, isError } = useQuery({
     queryKey: ['my-tasks', user?.email],
     queryFn: () => base44.entities.Task.filter({ assigned_to: user.email }),
     enabled: !!user?.email,
@@ -213,7 +213,12 @@ export default function MyTasks() {
       {user && <div className="px-4 pt-4"><ClockButton user={user} /></div>}
 
       <div className="px-4 py-4 pb-28 space-y-3">
-        {isLoading ? (
+        {isError ? (
+          <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
+            <p className="text-red-400 font-medium">Failed to load tasks</p>
+            <p className="text-slate-500 text-sm">Check your connection and refresh the page</p>
+          </div>
+        ) : isLoading ? (
           <div className="flex justify-center py-24">
             <div className="w-8 h-8 border-4 border-slate-700 border-t-blue-500 rounded-full animate-spin" />
           </div>

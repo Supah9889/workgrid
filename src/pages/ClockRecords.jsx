@@ -12,7 +12,7 @@ export default function ClockRecords() {
   const queryClient = useQueryClient();
   const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split('T')[0]);
 
-  const { data: allRecords = [], refetch } = useQuery({
+  const { data: allRecords = [], refetch, isLoading, isError } = useQuery({
     queryKey: ['clock-records', selectedDate],
     queryFn: () => base44.entities.ClockRecord.filter({ date: selectedDate }),
     refetchInterval: 30000,
@@ -47,6 +47,13 @@ export default function ClockRecords() {
         hoursToday: Math.round(hoursToday * 100) / 100,
       };
     });
+
+  if (isError) return (
+    <div className="flex flex-col items-center justify-center h-64 gap-3">
+      <p className="text-destructive font-medium">Failed to load data</p>
+      <p className="text-muted-foreground text-sm">Check your connection and refresh the page</p>
+    </div>
+  );
 
   return (
     <div className="p-6 max-w-6xl mx-auto space-y-6">
@@ -83,7 +90,13 @@ export default function ClockRecords() {
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">
           Daily Log — {format(new Date(selectedDate + 'T12:00:00'), 'MMMM d, yyyy')}
         </h2>
-        <DailyLog records={allRecords} />
+        {isLoading ? (
+          <div className="flex items-center justify-center h-32">
+            <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
+          </div>
+        ) : (
+          <DailyLog records={allRecords} />
+        )}
       </div>
     </div>
   );

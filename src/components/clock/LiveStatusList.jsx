@@ -30,13 +30,17 @@ export default function LiveStatusList({ employees, clockedInRecords, onManualCl
     const now = new Date();
     const inTime = new Date(record.punch_in_time);
     const totalHours = Math.round(((now - inTime) / 3600000) * 100) / 100;
-    await base44.entities.ClockRecord.update(record.id, {
-      punch_out_time: now.toISOString(),
-      total_hours: totalHours,
-      manually_closed: true,
-    });
-    toast({ title: 'Closed clock record for ' + record.employee_name });
-    onManualClose?.();
+    try {
+      await base44.entities.ClockRecord.update(record.id, {
+        punch_out_time: now.toISOString(),
+        total_hours: totalHours,
+        manually_closed: true,
+      });
+      toast({ title: 'Closed clock record for ' + record.employee_name });
+      onManualClose?.();
+    } catch (err) {
+      toast({ title: 'Something went wrong', description: err.message, variant: 'destructive' });
+    }
   };
 
   return (
@@ -105,7 +109,7 @@ export default function LiveStatusList({ employees, clockedInRecords, onManualCl
                   {isOnLunch ? 'On Lunch' : isClockedIn ? 'On Clock' : 'Off Clock'}
                 </Badge>
                 {isClockedIn && (
-                  <Button size="sm" variant="outline" className="text-xs h-7" onClick={() => handleManualClose(record)}>
+                  <Button size="sm" variant="outline" className="text-xs h-10 px-3" onClick={() => handleManualClose(record)}>
                     <LogOut className="w-3 h-3 mr-1" /> Close
                   </Button>
                 )}

@@ -135,7 +135,7 @@ export default function Sidebar({ onClose }) {
             const active = location.pathname === item.path;
             return (
               <Link key={item.label} to={item.path} onClick={() => onClose?.()}
-                className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg transition-colors ${active ? 'text-primary' : 'text-muted-foreground'}`}>
+                className={`flex flex-col items-center gap-0.5 px-3 py-3 min-h-[48px] rounded-lg transition-colors ${active ? 'text-primary' : 'text-muted-foreground'}`}>
                 <Icon className="w-5 h-5" />
                 <span className="text-[10px]">{item.label}</span>
               </Link>

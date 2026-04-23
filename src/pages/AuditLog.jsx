@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
@@ -44,7 +45,7 @@ function PunchDetail({ label, time, lat, lng, inBounds, geoCenter }) {
   );
 }
 
-function AuditRow({ record, geoCenter }) {
+function AuditRow({ record, geoCenter, onEmployeeClick }) {
   const [expanded, setExpanded] = useState(false);
 
   return (
@@ -57,7 +58,12 @@ function AuditRow({ record, geoCenter }) {
         onClick={() => setExpanded(v => !v)}
       >
         <div className="flex-1 min-w-0">
-          <p className="text-sm font-medium">{record.employee_name || record.employee_email}</p>
+          <p
+            className="text-sm font-medium hover:text-primary hover:underline cursor-pointer inline"
+            onClick={e => { e.stopPropagation(); onEmployeeClick?.(); }}
+          >
+            {record.employee_name || record.employee_email}
+          </p>
           <p className="text-xs text-muted-foreground">{record.date}</p>
         </div>
         <div className="text-xs text-muted-foreground space-y-0.5 text-right hidden sm:block">
@@ -127,13 +133,14 @@ function AuditRow({ record, geoCenter }) {
 }
 
 export default function AuditLog() {
+  const navigate = useNavigate();
   const today = new Date().toISOString().split('T')[0];
   const [employeeFilter, setEmployeeFilter] = useState('');
   const [dateFrom, setDateFrom] = useState('');
   const [dateTo, setDateTo] = useState('');
   const [flaggedOnly, setFlaggedOnly] = useState(false);
 
-  const { data: allRecords = [], isLoading } = useQuery({
+  const { data: allRecords = [], isLoading, isError } = useQuery({
     queryKey: ['audit-log-records'],
     queryFn: () => base44.entities.ClockRecord.list('-created_date', 500),
   });
@@ -142,6 +149,14 @@ export default function AuditLog() {
     queryKey: ['app-settings'],
     queryFn: () => base44.entities.AppSettings.list(),
   });
+
+  const { data: users = [] } = useQuery({
+    queryKey: ['audit-users'],
+    queryFn: () => base44.entities.User.list(),
+  });
+
+  const emailToId = {};
+  users.forEach(u => { emailToId[u.email] = u.id; });
 
   const geoCenter = settingsList[0] || null;
 
@@ -169,15 +184,15 @@ export default function AuditLog() {
           placeholder="Filter by employee..."
           value={employeeFilter}
           onChange={e => setEmployeeFilter(e.target.value)}
-          className="w-48 h-8 text-sm"
+          className="w-48 h-10 text-sm"
         />
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">From</span>
-          <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-36 h-8 text-sm" />
+          <Input type="date" value={dateFrom} onChange={e => setDateFrom(e.target.value)} className="w-36 h-10 text-sm" />
         </div>
         <div className="flex items-center gap-2">
           <span className="text-xs text-muted-foreground">To</span>
-          <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-36 h-8 text-sm" />
+          <Input type="date" value={dateTo} onChange={e => setDateTo(e.target.value)} className="w-36 h-10 text-sm" />
         </div>
         <div
           onClick={() => setFlaggedOnly(v => !v)}
@@ -201,7 +216,12 @@ export default function AuditLog() {
       </div>
 
       {/* Records */}
-      {isLoading ? (
+      {isError ? (
+        <div className="flex flex-col items-center justify-center h-64 gap-3">
+          <p className="text-destructive font-medium">Failed to load data</p>
+          <p className="text-muted-foreground text-sm">Check your connection and refresh the page</p>
+        </div>
+      ) : isLoading ? (
         <div className="flex justify-center py-16">
           <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
         </div>
@@ -220,7 +240,15 @@ export default function AuditLog() {
             <div className="w-5" />
           </div>
           {filtered.map(r => (
-            <AuditRow key={r.id} record={r} geoCenter={geoCenter} />
+            <AuditRow
+              key={r.id}
+              record={r}
+              geoCenter={geoCenter}
+              onEmployeeClick={() => {
+                const id = emailToId[r.employee_email];
+                if (id) navigate(`/employees/${id}`);
+              }}
+            />
           ))}
         </div>
       )}

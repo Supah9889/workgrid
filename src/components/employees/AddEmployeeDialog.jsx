@@ -22,14 +22,17 @@ export default function AddEmployeeDialog({ open, onOpenChange, onSuccess }) {
 
   const handleSubmit = async () => {
     if (!email.trim()) return;
-
     setLoading(true);
-    await base44.users.inviteUser(email.trim(), role === 'super_admin' ? 'admin' : 'user');
-    toast({ title: `Invitation sent to ${email}` });
-    setEmail('');
-    setRole('employee');
-    onOpenChange(false);
-    onSuccess?.();
+    try {
+      await base44.users.inviteUser(email.trim(), role === 'super_admin' ? 'admin' : 'user');
+      toast({ title: `Invitation sent to ${email}` });
+      setEmail('');
+      setRole('employee');
+      onOpenChange(false);
+      onSuccess?.();
+    } catch (err) {
+      toast({ title: 'Something went wrong', description: err.message, variant: 'destructive' });
+    }
     setLoading(false);
   };
 

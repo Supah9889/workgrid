@@ -8,8 +8,10 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Loader2 } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 
 export default function EditTaskDialog({ open, onOpenChange, task, employees = [], onSaved }) {
+  const { toast } = useToast();
   const [form, setForm] = useState({});
   const [saving, setSaving] = useState(false);
 
@@ -55,16 +57,20 @@ export default function EditTaskDialog({ open, onOpenChange, task, employees = [
       }];
     }
 
-    await base44.entities.Task.update(task.id, updates);
-    if (form.assigned_to !== task.assigned_to) {
-      await notifyTaskReassigned(task, task.assigned_to, form.assigned_to);
-    }
-    if (form.status !== task.status) {
-      await notifyTaskStatusChanged(task, form.status);
+    try {
+      await base44.entities.Task.update(task.id, updates);
+      if (form.assigned_to !== task.assigned_to) {
+        await notifyTaskReassigned(task, task.assigned_to, form.assigned_to);
+      }
+      if (form.status !== task.status) {
+        await notifyTaskStatusChanged(task, form.status);
+      }
+      onOpenChange(false);
+      onSaved?.();
+    } catch (err) {
+      toast({ title: 'Something went wrong', description: err.message, variant: 'destructive' });
     }
     setSaving(false);
-    onOpenChange(false);
-    onSaved?.();
   };
 
   return (

@@ -10,7 +10,7 @@ export default function GeofenceSettings() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
 
-  const { data: settingsList = [], isLoading } = useQuery({
+  const { data: settingsList = [], isLoading, isError } = useQuery({
     queryKey: ['app-settings'],
     queryFn: () => base44.entities.AppSettings.list(),
   });
@@ -92,13 +92,18 @@ export default function GeofenceSettings() {
 
   const radiusFt = Math.round(form.geofence_radius * 5280);
 
-  if (isLoading) {
-    return (
-      <div className="flex justify-center py-24">
-        <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
-      </div>
-    );
-  }
+  if (isLoading) return (
+    <div className="flex justify-center py-24">
+      <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
+    </div>
+  );
+
+  if (isError) return (
+    <div className="flex flex-col items-center justify-center h-64 gap-3">
+      <p className="text-destructive font-medium">Failed to load data</p>
+      <p className="text-muted-foreground text-sm">Check your connection and refresh the page</p>
+    </div>
+  );
 
   return (
     <div className="p-6 max-w-2xl mx-auto space-y-6">

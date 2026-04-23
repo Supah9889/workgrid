@@ -8,13 +8,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import PinModal from '@/components/clock/PinModal';
 
-async function hashPin(pin) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(pin);
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  return Array.from(new Uint8Array(hashBuffer)).map(b => b.toString(16).padStart(2, '0')).join('');
-}
-
 function exportCSV(rows, filename) {
   const headers = Object.keys(rows[0] || {}).join(',');
   const body = rows.map(r => Object.values(r).map(v => `"${String(v ?? '').replace(/"/g, '""')}"`).join(',')).join('\n');
@@ -27,11 +20,10 @@ function exportCSV(rows, filename) {
 export default function SecurityDashboard() {
   const { user } = useAuth();
   const [unlocked, setUnlocked] = useState(false);
-  const [pinError, setPinError] = useState('');
   const [dateFrom, setDateFrom] = useState(format(subDays(new Date(), 7), 'yyyy-MM-dd'));
   const [dateTo, setDateTo] = useState(format(new Date(), 'yyyy-MM-dd'));
 
-  const { data: clockRecords = [] } = useQuery({
+  const { data: clockRecords = [], isError } = useQuery({
     queryKey: ['security-clock', dateFrom, dateTo],
     queryFn: () => base44.entities.ClockRecord.list(),
     enabled: unlocked,
@@ -46,14 +38,8 @@ export default function SecurityDashboard() {
   const flagged = clockRecords.filter(r => r.flagged);
   const filtered = flagged.filter(r => r.date >= dateFrom && r.date <= dateTo);
 
-  const handlePinSuccess = async (enteredPin) => {
-    const hash = await hashPin(enteredPin);
-    if (hash === user?.pin_hash) {
-      setUnlocked(true);
-      setPinError('');
-    } else {
-      setPinError('Incorrect PIN');
-    }
+  const handlePinSuccess = () => {
+    setUnlocked(true);
   };
 
   if (!unlocked) {
@@ -65,17 +51,23 @@ export default function SecurityDashboard() {
           </div>
           <h1 className="text-xl font-bold text-white">Security Dashboard</h1>
           <p className="text-slate-400 text-sm">Enter your PIN to continue</p>
-          {pinError && <p className="text-red-400 text-sm">{pinError}</p>}
         </div>
         <PinModal
           title="Security PIN Required"
+          expectedHash={user?.pin_hash}
           onSuccess={handlePinSuccess}
           onCancel={() => window.history.back()}
-          inline
         />
       </div>
     );
   }
+
+  if (isError) return (
+    <div className="flex flex-col items-center justify-center h-64 gap-3">
+      <p className="text-destructive font-medium">Failed to load data</p>
+      <p className="text-muted-foreground text-sm">Check your connection and refresh the page</p>
+    </div>
+  );
 
   return (
     <div className="p-6 max-w-5xl mx-auto">

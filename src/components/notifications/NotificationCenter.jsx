@@ -57,14 +57,22 @@ export default function NotificationCenter() {
     : [...notifications].sort((a, b) => new Date(b.created_date) - new Date(a.created_date));
 
   const markAllRead = async () => {
-    await Promise.all(unread.map(n => base44.entities.Notification.update(n.id, { read: true })));
-    queryClient.invalidateQueries({ queryKey: ['notifications', user?.email] });
+    try {
+      await Promise.all(unread.map(n => base44.entities.Notification.update(n.id, { read: true })));
+      queryClient.invalidateQueries({ queryKey: ['notifications', user?.email] });
+    } catch {
+      // non-critical, silently ignore
+    }
   };
 
   const handleClick = async (n) => {
-    if (!n.read) {
-      await base44.entities.Notification.update(n.id, { read: true });
-      queryClient.invalidateQueries({ queryKey: ['notifications', user?.email] });
+    try {
+      if (!n.read) {
+        await base44.entities.Notification.update(n.id, { read: true });
+        queryClient.invalidateQueries({ queryKey: ['notifications', user?.email] });
+      }
+    } catch {
+      // non-critical, continue with navigation
     }
     setOpen(false);
     if (n.link) navigate(n.link);

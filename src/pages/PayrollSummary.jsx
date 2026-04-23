@@ -41,7 +41,7 @@ export default function PayrollSummary() {
 
   const weekDays = eachDayOfInterval({ start: weekStart, end: weekEnd });
 
-  const { data: users = [] } = useQuery({
+  const { data: users = [], isLoading, isError } = useQuery({
     queryKey: ['payroll-users'],
     queryFn: async () => {
       const all = await base44.entities.User.list();
@@ -53,6 +53,19 @@ export default function PayrollSummary() {
     queryKey: ['payroll-records'],
     queryFn: () => base44.entities.ClockRecord.list(),
   });
+
+  if (isLoading) return (
+    <div className="flex items-center justify-center h-64">
+      <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
+    </div>
+  );
+
+  if (isError) return (
+    <div className="flex flex-col items-center justify-center h-64 gap-3">
+      <p className="text-destructive font-medium">Failed to load data</p>
+      <p className="text-muted-foreground text-sm">Check your connection and refresh the page</p>
+    </div>
+  );
 
   const handleExport = () => {
     const rows = users.map(u => ({
@@ -74,10 +87,10 @@ export default function PayrollSummary() {
     <div className="p-6 max-w-6xl mx-auto">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
-          <DollarSign className="w-6 h-6 text-green-400" />
+          <DollarSign className="w-6 h-6 text-emerald-500" />
           <div>
-            <h1 className="text-2xl font-bold text-white">Payroll Summary</h1>
-            <p className="text-slate-400 text-sm">
+            <h1 className="text-2xl font-bold text-foreground">Payroll Summary</h1>
+            <p className="text-muted-foreground text-sm">
               Week of {format(weekStart, 'MMM d')} – {format(weekEnd, 'MMM d, yyyy')}
             </p>
           </div>
@@ -92,31 +105,31 @@ export default function PayrollSummary() {
         </div>
       </div>
 
-      <div className="bg-slate-800/60 border border-slate-700 rounded-xl p-4 mb-6">
-        <p className="text-slate-400 text-xs uppercase tracking-wide mb-1">Total Team Hours This Week</p>
-        <p className="text-4xl font-bold text-white">{totalWeekHours.toFixed(1)}h</p>
+      <div className="bg-card border border-border rounded-xl p-4 mb-6">
+        <p className="text-muted-foreground text-xs uppercase tracking-wide mb-1">Total Team Hours This Week</p>
+        <p className="text-4xl font-bold text-foreground">{totalWeekHours.toFixed(1)}h</p>
       </div>
 
-      <div className="overflow-x-auto">
+      <div className="overflow-x-auto rounded-xl border border-border">
         <table className="w-full text-sm">
           <thead>
-            <tr className="border-b border-slate-700">
-              <th className="text-left py-3 px-4 text-slate-400 font-medium">Employee</th>
+            <tr className="border-b border-border bg-muted/40">
+              <th className="text-left py-3 px-4 text-muted-foreground font-medium">Employee</th>
               {weekDays.map(d => (
-                <th key={d} className="text-center py-3 px-2 text-slate-400 font-medium min-w-[60px]">
+                <th key={d} className="text-center py-3 px-2 text-muted-foreground font-medium min-w-[60px]">
                   {format(d, 'EEE')}<br />
-                  <span className="text-xs text-slate-500">{format(d, 'M/d')}</span>
+                  <span className="text-xs text-muted-foreground/60">{format(d, 'M/d')}</span>
                 </th>
               ))}
-              <th className="text-center py-3 px-3 text-slate-400 font-medium">Week</th>
-              <th className="text-center py-3 px-3 text-slate-400 font-medium">Month</th>
-              <th className="text-center py-3 px-3 text-slate-400 font-medium">Flags</th>
+              <th className="text-center py-3 px-3 text-muted-foreground font-medium">Week</th>
+              <th className="text-center py-3 px-3 text-muted-foreground font-medium">Month</th>
+              <th className="text-center py-3 px-3 text-muted-foreground font-medium">Flags</th>
             </tr>
           </thead>
           <tbody>
             {users.length === 0 ? (
               <tr>
-                <td colSpan={weekDays.length + 4} className="text-center py-12 text-slate-500">
+                <td colSpan={weekDays.length + 4} className="text-center py-12 text-muted-foreground">
                   No employees found
                 </td>
               </tr>
@@ -126,37 +139,37 @@ export default function PayrollSummary() {
                 const monthHours = calcHours(records, u.email, monthFrom, monthTo);
                 const flagCount = calcFlagged(records, u.email, weekFrom, weekTo);
                 return (
-                  <tr key={u.id} className="border-b border-slate-800 hover:bg-slate-800/40 transition-colors">
+                  <tr key={u.id} className="border-b border-border hover:bg-muted/30 transition-colors">
                     <td className="py-3 px-4">
-                      <p className="text-white font-medium">{u.full_name || u.email}</p>
-                      <p className="text-slate-500 text-xs capitalize">{u.role}</p>
+                      <p className="text-foreground font-medium">{u.full_name || u.email}</p>
+                      <p className="text-muted-foreground text-xs capitalize">{u.role}</p>
                     </td>
                     {weekDays.map(d => {
                       const dayStr = format(d, 'yyyy-MM-dd');
                       const hours = calcHours(records, u.email, dayStr, dayStr);
                       return (
                         <td key={d} className="text-center py-3 px-2">
-                          <span className={hours > 0 ? 'text-white' : 'text-slate-600'}>
+                          <span className={hours > 0 ? 'text-foreground' : 'text-muted-foreground'}>
                             {hours > 0 ? hours.toFixed(1) : '—'}
                           </span>
                         </td>
                       );
                     })}
                     <td className="text-center py-3 px-3">
-                      <span className={`font-semibold ${weekHours > 0 ? 'text-green-400' : 'text-slate-500'}`}>
+                      <span className={`font-semibold ${weekHours > 0 ? 'text-emerald-600' : 'text-muted-foreground'}`}>
                         {weekHours.toFixed(1)}h
                       </span>
                     </td>
                     <td className="text-center py-3 px-3">
-                      <span className="text-slate-300">{monthHours.toFixed(1)}h</span>
+                      <span className="text-foreground">{monthHours.toFixed(1)}h</span>
                     </td>
                     <td className="text-center py-3 px-3">
                       {flagCount > 0 ? (
-                        <Badge className="bg-red-500/20 text-red-400 border-red-500/30 gap-1">
+                        <Badge className="bg-red-500/20 text-red-600 border-red-300 gap-1">
                           <AlertTriangle className="w-3 h-3" />{flagCount}
                         </Badge>
                       ) : (
-                        <span className="text-green-400 text-xs">✓</span>
+                        <span className="text-emerald-600 text-xs">✓</span>
                       )}
                     </td>
                   </tr>
@@ -165,19 +178,19 @@ export default function PayrollSummary() {
             )}
           </tbody>
           <tfoot>
-            <tr className="border-t-2 border-slate-600">
-              <td className="py-3 px-4 text-slate-400 font-medium">Totals</td>
+            <tr className="border-t-2 border-border">
+              <td className="py-3 px-4 text-muted-foreground font-medium">Totals</td>
               {weekDays.map(d => {
                 const dayStr = format(d, 'yyyy-MM-dd');
                 const total = users.reduce((sum, u) => sum + calcHours(records, u.email, dayStr, dayStr), 0);
                 return (
-                  <td key={d} className="text-center py-3 px-2 text-slate-300 font-medium">
+                  <td key={d} className="text-center py-3 px-2 text-foreground font-medium">
                     {total > 0 ? total.toFixed(1) : '—'}
                   </td>
                 );
               })}
-              <td className="text-center py-3 px-3 text-green-400 font-bold">{totalWeekHours.toFixed(1)}h</td>
-              <td className="text-center py-3 px-3 text-slate-300 font-medium">
+              <td className="text-center py-3 px-3 text-emerald-600 font-bold">{totalWeekHours.toFixed(1)}h</td>
+              <td className="text-center py-3 px-3 text-foreground font-medium">
                 {users.reduce((sum, u) => sum + calcHours(records, u.email, monthFrom, monthTo), 0).toFixed(1)}h
               </td>
               <td></td>

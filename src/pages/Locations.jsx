@@ -11,7 +11,7 @@ export default function Locations() {
   const queryClient = useQueryClient();
   const today = new Date().toISOString().split('T')[0];
 
-  const { data: locationRecords = [], refetch: refetchLoc } = useQuery({
+  const { data: locationRecords = [], refetch: refetchLoc, isLoading, isError } = useQuery({
     queryKey: ['location-records'],
     queryFn: () => base44.entities.LocationRecord.list(),
     refetchInterval: 60000,
@@ -53,6 +53,19 @@ export default function Locations() {
   // Only show employees who are currently clocked in
   const clockedInEmails = new Set(clockedInRecords.map(r => r.employee_email));
   const activeLocations = locationRecords.filter(l => clockedInEmails.has(l.employee_email));
+
+  if (isLoading) return (
+    <div className="flex items-center justify-center h-64">
+      <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
+    </div>
+  );
+
+  if (isError) return (
+    <div className="flex flex-col items-center justify-center h-64 gap-3">
+      <p className="text-destructive font-medium">Failed to load data</p>
+      <p className="text-muted-foreground text-sm">Check your connection and refresh the page</p>
+    </div>
+  );
 
   return (
     <div className="p-6 max-w-7xl mx-auto space-y-6">

@@ -4,7 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Search } from 'lucide-react';
-import { format, startOfDay, endOfDay } from 'date-fns';
+import { format } from 'date-fns';
 import TaskRow from '@/components/tasks/TaskRow';
 import CreateTaskDialog from '@/components/tasks/CreateTaskDialog';
 import EditTaskDialog from '@/components/tasks/EditTaskDialog';
@@ -17,7 +17,7 @@ export default function TaskBoard() {
 
   const today = new Date();
 
-  const { data: allTasks = [] } = useQuery({
+  const { data: allTasks = [], isLoading, isError } = useQuery({
     queryKey: ['tasks-today'],
     queryFn: () => base44.entities.Task.list('-created_date'),
   });
@@ -37,14 +37,13 @@ export default function TaskBoard() {
     return unsubscribe;
   }, [queryClient]);
 
-  const todayStart = startOfDay(today).toISOString();
-  const todayEnd = endOfDay(today).toISOString();
-  const todayTasks = allTasks.filter(t => {
-    if (!t.created_date) return false;
-    return t.created_date >= todayStart && t.created_date <= todayEnd;
+  const todayStr = today.toISOString().split('T')[0];
+  const visibleTasks = allTasks.filter(t => {
+    if (t.status !== 'delivered') return true;
+    return t.updated_date?.startsWith(todayStr) || t.created_date?.startsWith(todayStr);
   });
 
-  const sorted = [...todayTasks].sort((a, b) => {
+  const sorted = [...visibleTasks].sort((a, b) => {
     const aU = !a.assigned_to ? 0 : 1;
     const bU = !b.assigned_to ? 0 : 1;
     if (aU !== bU) return aU - bU;
@@ -82,9 +81,18 @@ export default function TaskBoard() {
       </div>
 
       <div className="space-y-2">
-        {filtered.length === 0 ? (
+        {isError ? (
+          <div className="flex flex-col items-center justify-center h-64 gap-3">
+            <p className="text-destructive font-medium">Failed to load data</p>
+            <p className="text-muted-foreground text-sm">Check your connection and refresh the page</p>
+          </div>
+        ) : isLoading ? (
+          <div className="flex items-center justify-center h-64">
+            <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground">
-            <p className="text-lg font-medium">No tasks for today yet</p>
+            <p className="text-lg font-medium">No active tasks</p>
             <p className="text-sm mt-1">Click "Create Task" to get started</p>
           </div>
         ) : (

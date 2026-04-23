@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Clock, LogOut, AlertTriangle, Coffee } from 'lucide-react';
 import { format, differenceInSeconds } from 'date-fns';
 import { base44 } from '@/api/base44Client';
-import { toast } from 'sonner';
+import { useToast } from '@/components/ui/use-toast';
 
 function LiveDuration({ since }) {
   const [text, setText] = useState('');
@@ -23,6 +23,7 @@ function LiveDuration({ since }) {
 }
 
 export default function LiveStatusList({ employees, clockedInRecords, onManualClose }) {
+  const { toast } = useToast();
   const clockedInEmails = new Set(clockedInRecords.map(r => r.employee_email));
 
   const handleManualClose = async (record) => {
@@ -34,7 +35,7 @@ export default function LiveStatusList({ employees, clockedInRecords, onManualCl
       total_hours: totalHours,
       manually_closed: true,
     });
-    toast.success(`Closed clock record for ${record.employee_name}`);
+    toast({ title: 'Closed clock record for ' + record.employee_name });
     onManualClose?.();
   };
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useParams } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { format, subDays, startOfDay } from 'date-fns';
@@ -19,8 +19,7 @@ const STATUS_STYLES = {
 export default function EmployeeProfile() {
   const navigate = useNavigate();
   const { toast } = useToast();
-  const params = new URLSearchParams(window.location.search);
-  const employeeId = params.get('id');
+  const { id: employeeId } = useParams();
 
   const [editMode, setEditMode] = useState(false);
   const [editRole, setEditRole] = useState('');

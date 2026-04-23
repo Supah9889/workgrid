@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
-import NotificationBell from '@/components/notifications/NotificationBell';
+import NotificationCenter from '@/components/notifications/NotificationCenter';
 import ChatPanel from '@/components/chat/ChatPanel';
 import { useAuth } from '@/lib/AuthContext';
 import { Menu } from 'lucide-react';
@@ -26,7 +26,7 @@ export default function AppLayout() {
           <button onClick={() => setSidebarOpen(true)} className="md:hidden p-2 rounded-md hover:bg-muted transition-colors mr-2">
             <Menu className="w-5 h-5" />
           </button>
-          <NotificationBell />
+          <NotificationCenter />
           <div className="w-px h-5 bg-border" />
           <div className="flex items-center gap-2">
             <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
@@ -35,7 +35,7 @@ export default function AppLayout() {
             <span className="text-xs font-medium hidden sm:block">{user?.full_name || user?.email}</span>
           </div>
         </header>
-        <main className="flex-1 overflow-auto">
+        <main className="flex-1 overflow-auto pb-16 md:pb-0">
           <Outlet />
         </main>
       </div>

@@ -92,7 +92,7 @@ const AuthenticatedApp = () => {
               <ClockRecords />
             </RoleGuard>
           } />
-          <Route path="/employee-profile" element={
+          <Route path="/employees/:id" element={
             <RoleGuard allowedRoles={['super_admin', 'owner']}>
               <EmployeeProfile />
             </RoleGuard>

@@ -102,7 +102,7 @@ export default function EmployeeTable({ users, onChangeRole, onDeactivate, onAct
                           <UserCircle className="w-4 h-4 mr-2" /> Set as Employee
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />
-                        <DropdownMenuItem onClick={() => navigate(`/employee-profile?id=${u.id}`)}>
+                        <DropdownMenuItem onClick={() => navigate(`/employees/${u.id}`)}>
                           <ExternalLink className="w-4 h-4 mr-2" /> View Profile
                         </DropdownMenuItem>
                         <DropdownMenuSeparator />

@@ -6,6 +6,7 @@ import { Loader2, MapPin, Clock, Package, Building2, ChevronDown, ChevronUp, Lis
 import { PriorityBadge, StatusBadge } from '@/components/tasks/TaskBadges';
 import { useToast } from '@/components/ui/use-toast';
 import { format } from 'date-fns';
+import ClockButton from '@/components/clock/ClockButton';
 
 const STATUS_NEXT = {
   pending:   { label: 'Mark as Picked Up', next: 'picked_up' },
@@ -180,6 +181,8 @@ export default function MyTasks() {
           {!isLoading && ` · ${tasks.length} task${tasks.length !== 1 ? 's' : ''} assigned`}
         </p>
       </div>
+
+      {user && <div className="px-4 pt-4"><ClockButton user={user} /></div>}
 
       <div className="px-4 py-4 pb-24 space-y-3">
         {isLoading ? (

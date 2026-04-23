@@ -14,31 +14,37 @@ import {
   ChevronLeft,
   ChevronRight,
   Hexagon,
+  FileText,
+  Radio,
+  BookUser,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
-// Super Admin nav
 const SUPER_ADMIN_NAV = [
-  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/tasks', label: 'Task Board', icon: ClipboardList },
-  { path: '/clock-records', label: 'Time & Attendance', icon: Clock },
-  { path: '/locations', label: 'Location Board', icon: MapPin },
-  { path: '/employees', label: 'Employees', icon: Users },
-  { path: '/permissions', label: 'Permissions', icon: Shield },
+  { path: '/dashboard',          label: 'Dashboard',        icon: LayoutDashboard },
+  { path: '/tasks',              label: 'Task Board',       icon: ClipboardList },
+  { path: '/clock-records',      label: 'Time & Attendance', icon: Clock },
+  { path: '/audit-log',          label: 'Audit Log',        icon: FileText },
+  { path: '/locations',          label: 'Location Board',   icon: MapPin },
+  { path: '/employees',          label: 'Employees',        icon: Users },
+  { path: '/contact-directory',  label: 'Contacts',         icon: BookUser },
+  { path: '/geofence-settings',  label: 'Geofence',         icon: Radio },
+  { path: '/permissions',        label: 'Permissions',      icon: Shield },
 ];
 
-// Operator nav (some items gated by permissions)
 const OPERATOR_NAV = [
-  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
-  { path: '/tasks', label: 'Task Board', icon: ClipboardList, permission: 'view_all_tasks' },
-  { path: '/clock-records', label: 'Time & Attendance', icon: Clock, permission: 'view_clock_records' },
-  { path: '/locations', label: 'Location Board', icon: MapPin, permission: 'view_employee_locations' },
+  { path: '/dashboard',         label: 'Dashboard',        icon: LayoutDashboard },
+  { path: '/tasks',             label: 'Task Board',       icon: ClipboardList, permission: 'view_all_tasks' },
+  { path: '/clock-records',     label: 'Time & Attendance', icon: Clock, permission: 'view_clock_records' },
+  { path: '/audit-log',         label: 'Audit Log',        icon: FileText, permission: 'view_clock_records' },
+  { path: '/locations',         label: 'Location Board',   icon: MapPin, permission: 'view_employee_locations' },
+  { path: '/contact-directory', label: 'Contacts',         icon: BookUser },
 ];
 
-// Employee nav
 const EMPLOYEE_NAV = [
-  { path: '/my-tasks', label: 'My Tasks', icon: ListTodo },
+  { path: '/my-tasks',          label: 'My Tasks',         icon: ListTodo },
+  { path: '/contact-directory', label: 'My Contact Info',  icon: BookUser },
 ];
 
 export default function Sidebar() {

@@ -1,0 +1,25 @@
+{
+  "name": "AppSettings",
+  "type": "object",
+  "properties": {
+    "geofence_enabled": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether geofencing is active for clock punches"
+    },
+    "geofence_lat": {
+      "type": "number",
+      "description": "Latitude of the geofence center (business location)"
+    },
+    "geofence_lng": {
+      "type": "number",
+      "description": "Longitude of the geofence center"
+    },
+    "geofence_radius": {
+      "type": "number",
+      "default": 0.5,
+      "description": "Acceptable radius in miles from the geofence center"
+    }
+  },
+  "required": []
+}

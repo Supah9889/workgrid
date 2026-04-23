@@ -4,30 +4,15 @@
   "properties": {
     "role": {
       "type": "string",
-      "enum": [
-        "super_admin",
-        "operator",
-        "employee"
-      ],
+      "enum": ["super_admin", "operator", "employee"],
       "default": "employee",
       "description": "User role in the system"
     },
     "status": {
       "type": "string",
-      "enum": [
-        "active",
-        "inactive"
-      ],
+      "enum": ["active", "inactive"],
       "default": "active",
       "description": "Whether the user account is active"
-    },
-    "profile_photo": {
-      "type": "string",
-      "description": "URL of the user's profile photo"
-    },
-    "phone": {
-      "type": "string",
-      "description": "User's phone number"
     },
     "full_name": {
       "type": "string",
@@ -41,6 +26,22 @@
       "type": "boolean",
       "default": false,
       "description": "Whether the user has completed the onboarding flow"
+    },
+    "contact_phone": {
+      "type": "string",
+      "description": "Phone number for alert notifications"
+    },
+    "contact_email": {
+      "type": "string",
+      "description": "Email for alert notifications (defaults to login email)"
+    },
+    "profile_photo": {
+      "type": "string",
+      "description": "URL of the user's profile photo"
+    },
+    "phone": {
+      "type": "string",
+      "description": "Legacy phone number field"
     }
   },
   "required": []

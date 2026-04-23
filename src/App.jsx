@@ -20,6 +20,9 @@ import Locations from '@/pages/Locations';
 import ClockRecords from '@/pages/ClockRecords';
 import EmployeeProfile from '@/pages/EmployeeProfile';
 import Onboarding from '@/pages/Onboarding';
+import AuditLog from '@/pages/AuditLog';
+import GeofenceSettings from '@/pages/GeofenceSettings';
+import ContactDirectory from '@/pages/ContactDirectory';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, needsOnboarding } = useAuth();
@@ -37,15 +40,10 @@ const AuthenticatedApp = () => {
   }
 
   if (authError) {
-    if (authError.type === 'user_not_registered') {
-      return <UserNotRegisteredError />;
-    } else if (authError.type === 'auth_required') {
-      navigateToLogin();
-      return null;
-    }
+    if (authError.type === 'user_not_registered') return <UserNotRegisteredError />;
+    if (authError.type === 'auth_required') { navigateToLogin(); return null; }
   }
 
-  // Redirect to onboarding if user hasn't set up their account yet
   if (needsOnboarding && location.pathname !== '/onboarding') {
     return <Navigate to="/onboarding" replace />;
   }
@@ -96,6 +94,17 @@ const AuthenticatedApp = () => {
               <EmployeeProfile />
             </RoleGuard>
           } />
+          <Route path="/audit-log" element={
+            <RoleGuard allowedRoles={['super_admin', 'operator']}>
+              <AuditLog />
+            </RoleGuard>
+          } />
+          <Route path="/geofence-settings" element={
+            <RoleGuard allowedRoles={['super_admin']}>
+              <GeofenceSettings />
+            </RoleGuard>
+          } />
+          <Route path="/contact-directory" element={<ContactDirectory />} />
         </Route>
         <Route path="*" element={<PageNotFound />} />
       </Routes>
@@ -113,7 +122,7 @@ function App() {
         <Toaster />
       </QueryClientProvider>
     </AuthProvider>
-  )
+  );
 }
 
-export default App
+export default App;

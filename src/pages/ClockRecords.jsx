@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { format, startOfDay, endOfDay } from 'date-fns';
+import { format } from 'date-fns';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Calendar, RefreshCw } from 'lucide-react';
@@ -23,7 +23,6 @@ export default function ClockRecords() {
     queryFn: () => base44.entities.User.list(),
   });
 
-  // Real-time updates
   useEffect(() => {
     const unsub = base44.entities.ClockRecord.subscribe(() => {
       queryClient.invalidateQueries({ queryKey: ['clock-records', selectedDate] });
@@ -31,20 +30,20 @@ export default function ClockRecords() {
     return unsub;
   }, [selectedDate, queryClient]);
 
-  const clockedInRecords = allRecords.filter(r => !r.clock_out && !r.manually_closed);
+  // Open records = punched in, not yet punched out
+  const clockedInRecords = allRecords.filter(r => !r.punch_out_time && !r.manually_closed);
   const isToday = selectedDate === new Date().toISOString().split('T')[0];
 
-  // Enrich employees with last clock info
   const enrichedEmployees = employees
     .filter(u => u.role !== 'super_admin' && u.status !== 'inactive')
     .map(emp => {
       const empRecords = allRecords.filter(r => r.employee_email === emp.email);
-      const closed = empRecords.filter(r => r.clock_out);
-      const lastOut = closed.sort((a, b) => new Date(b.clock_out) - new Date(a.clock_out))[0];
+      const closed = empRecords.filter(r => r.punch_out_time);
+      const lastOut = closed.sort((a, b) => new Date(b.punch_out_time) - new Date(a.punch_out_time))[0];
       const hoursToday = closed.reduce((sum, r) => sum + (r.total_hours || 0), 0);
       return {
         ...emp,
-        lastClockOut: lastOut?.clock_out,
+        lastPunchOut: lastOut?.punch_out_time,
         hoursToday: Math.round(hoursToday * 100) / 100,
       };
     });
@@ -72,7 +71,6 @@ export default function ClockRecords() {
         </div>
       </div>
 
-      {/* Live status — only show for today */}
       {isToday && (
         <LiveStatusList
           employees={enrichedEmployees}
@@ -81,7 +79,6 @@ export default function ClockRecords() {
         />
       )}
 
-      {/* Daily log */}
       <div>
         <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground mb-3">
           Daily Log — {format(new Date(selectedDate + 'T12:00:00'), 'MMMM d, yyyy')}

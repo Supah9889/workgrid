@@ -1,0 +1,49 @@
+{
+  "name": "ChatMessage",
+  "type": "object",
+  "properties": {
+    "message_text": {
+      "type": "string",
+      "description": "The message content"
+    },
+    "sender_email": {
+      "type": "string",
+      "description": "Email of the sender"
+    },
+    "sender_name": {
+      "type": "string",
+      "description": "Display name of the sender"
+    },
+    "sender_role": {
+      "type": "string",
+      "description": "Role of the sender"
+    },
+    "chat_type": {
+      "type": "string",
+      "enum": [
+        "general",
+        "private"
+      ],
+      "default": "general",
+      "description": "Type of chat message"
+    },
+    "conversation_id": {
+      "type": "string",
+      "description": "ID of the private conversation (null for general chat)"
+    },
+    "read_by": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Array of emails who have read this message",
+      "default": []
+    }
+  },
+  "required": [
+    "message_text",
+    "sender_email",
+    "sender_name",
+    "chat_type"
+  ]
+}

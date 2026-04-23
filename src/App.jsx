@@ -19,6 +19,7 @@ import MyTasks from '@/pages/MyTasks';
 import Locations from '@/pages/Locations';
 import ClockRecords from '@/pages/ClockRecords';
 import EmployeeProfile from '@/pages/EmployeeProfile';
+import EmployeeRepository from '@/pages/EmployeeRepository';
 import Onboarding from '@/pages/Onboarding';
 import AuditLog from '@/pages/AuditLog';
 import GeofenceSettings from '@/pages/GeofenceSettings';
@@ -92,6 +93,11 @@ const AuthenticatedApp = () => {
           <Route path="/employee-profile" element={
             <RoleGuard allowedRoles={['super_admin']}>
               <EmployeeProfile />
+            </RoleGuard>
+          } />
+          <Route path="/employees/repository" element={
+            <RoleGuard allowedRoles={['super_admin', 'operator']}>
+              <EmployeeRepository />
             </RoleGuard>
           } />
           <Route path="/audit-log" element={

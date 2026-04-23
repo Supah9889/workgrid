@@ -1,6 +1,7 @@
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import NotificationBell from '@/components/notifications/NotificationBell';
+import ChatPanel from '@/components/chat/ChatPanel';
 import { useAuth } from '@/lib/AuthContext';
 
 export default function AppLayout() {
@@ -25,6 +26,7 @@ export default function AppLayout() {
           <Outlet />
         </main>
       </div>
+      <ChatPanel />
     </div>
   );
 }

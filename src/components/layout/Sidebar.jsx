@@ -22,24 +22,26 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
 const SUPER_ADMIN_NAV = [
-  { path: '/dashboard',          label: 'Dashboard',        icon: LayoutDashboard },
-  { path: '/tasks',              label: 'Task Board',       icon: ClipboardList },
-  { path: '/clock-records',      label: 'Time & Attendance', icon: Clock },
-  { path: '/audit-log',          label: 'Audit Log',        icon: FileText },
-  { path: '/locations',          label: 'Location Board',   icon: MapPin },
-  { path: '/employees',          label: 'Employees',        icon: Users },
-  { path: '/contact-directory',  label: 'Contacts',         icon: BookUser },
-  { path: '/geofence-settings',  label: 'Geofence',         icon: Radio },
-  { path: '/permissions',        label: 'Permissions',      icon: Shield },
+  { path: '/dashboard',             label: 'Dashboard',        icon: LayoutDashboard },
+  { path: '/tasks',                 label: 'Task Board',       icon: ClipboardList },
+  { path: '/clock-records',         label: 'Time & Attendance', icon: Clock },
+  { path: '/audit-log',             label: 'Audit Log',        icon: FileText },
+  { path: '/locations',             label: 'Location Board',   icon: MapPin },
+  { path: '/employees',             label: 'Employees',        icon: Users },
+  { path: '/employees/repository',  label: 'Directory',        icon: BookUser },
+  { path: '/contact-directory',     label: 'Contacts',         icon: BookUser },
+  { path: '/geofence-settings',     label: 'Geofence',         icon: Radio },
+  { path: '/permissions',           label: 'Permissions',      icon: Shield },
 ];
 
 const OPERATOR_NAV = [
-  { path: '/dashboard',         label: 'Dashboard',        icon: LayoutDashboard },
-  { path: '/tasks',             label: 'Task Board',       icon: ClipboardList, permission: 'view_all_tasks' },
-  { path: '/clock-records',     label: 'Time & Attendance', icon: Clock, permission: 'view_clock_records' },
-  { path: '/audit-log',         label: 'Audit Log',        icon: FileText, permission: 'view_clock_records' },
-  { path: '/locations',         label: 'Location Board',   icon: MapPin, permission: 'view_employee_locations' },
-  { path: '/contact-directory', label: 'Contacts',         icon: BookUser },
+  { path: '/dashboard',             label: 'Dashboard',        icon: LayoutDashboard },
+  { path: '/tasks',                 label: 'Task Board',       icon: ClipboardList, permission: 'view_all_tasks' },
+  { path: '/clock-records',         label: 'Time & Attendance', icon: Clock, permission: 'view_clock_records' },
+  { path: '/audit-log',             label: 'Audit Log',        icon: FileText, permission: 'view_clock_records' },
+  { path: '/locations',             label: 'Location Board',   icon: MapPin, permission: 'view_employee_locations' },
+  { path: '/employees/repository',  label: 'Directory',        icon: BookUser },
+  { path: '/contact-directory',     label: 'Contacts',         icon: BookUser },
 ];
 
 const EMPLOYEE_NAV = [

@@ -1,0 +1,41 @@
+{
+  "name": "Conversation",
+  "type": "object",
+  "properties": {
+    "participant_emails": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Emails of all participants"
+    },
+    "participant_names": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Display names of all participants"
+    },
+    "created_by": {
+      "type": "string",
+      "description": "Email of conversation creator"
+    },
+    "last_message": {
+      "type": "string",
+      "description": "Preview of the last message"
+    },
+    "last_message_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp of last message"
+    },
+    "unread_counts": {
+      "type": "object",
+      "description": "Map of email -> unread count"
+    }
+  },
+  "required": [
+    "participant_emails",
+    "created_by"
+  ]
+}

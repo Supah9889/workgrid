@@ -9,7 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge, PriorityBadge } from '@/components/tasks/TaskBadges';
-import { toast } from 'sonner';
+import { useToast } from '@/components/ui/use-toast';
 
 const STATUS_STYLES = {
   active: 'bg-emerald-100 text-emerald-700 border-emerald-200',
@@ -18,6 +18,7 @@ const STATUS_STYLES = {
 
 export default function EmployeeProfile() {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const params = new URLSearchParams(window.location.search);
   const employeeId = params.get('id');
 
@@ -63,7 +64,7 @@ export default function EmployeeProfile() {
 
   const handleSaveRole = async () => {
     await base44.entities.User.update(employeeId, { role: editRole });
-    toast.success('Role updated');
+    toast({ title: 'Role updated' });
     refetchEmp();
     setEditMode(false);
   };
@@ -71,7 +72,7 @@ export default function EmployeeProfile() {
   const handleToggleStatus = async () => {
     const newStatus = employee.status === 'inactive' ? 'active' : 'inactive';
     await base44.entities.User.update(employeeId, { status: newStatus });
-    toast.success(`Employee ${newStatus === 'active' ? 'reactivated' : 'deactivated'}`);
+    toast({ title: `Employee ${newStatus === 'active' ? 'reactivated' : 'deactivated'}` });
     refetchEmp();
   };
 

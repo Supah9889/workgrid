@@ -93,8 +93,22 @@ export const AuthProvider = ({ children }) => {
     try {
       // Now check if the user is authenticated
       setIsLoadingAuth(true);
-      const currentUser = await base44.auth.me();
-      setUser(currentUser);
+      const authUser = await base44.auth.me();
+
+      // Fetch the app's custom User entity to get the role field
+      let userEntity = null;
+      try {
+        const results = await base44.entities.User.filter({ email: authUser.email });
+        if (results && results.length > 0) {
+          userEntity = results[0];
+        } else {
+          userEntity = await base44.entities.User.create({ email: authUser.email, role: 'employee' });
+        }
+      } catch (entityError) {
+        console.error('Failed to fetch/create User entity:', entityError);
+      }
+
+      setUser({ ...authUser, ...userEntity });
       setIsAuthenticated(true);
       setIsLoadingAuth(false);
       setAuthChecked(true);

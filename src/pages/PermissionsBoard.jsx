@@ -181,8 +181,19 @@ export default function PermissionsBoard() {
         </CardContent>
       </Card>
 
+      <div className="mt-3 px-5 py-3 rounded-lg border border-amber-200 bg-amber-50 flex items-center gap-3">
+        <span className="text-xl">👑</span>
+        <div className="flex-1">
+          <span className="text-sm font-semibold text-amber-800">Owner</span>
+          <span className="text-xs text-amber-700 ml-2">— Owner has all permissions and cannot be edited.</span>
+        </div>
+        <div className="flex gap-8 mr-2">
+          <span className="text-green-600 font-bold text-sm">✓</span>
+          <span className="text-green-600 font-bold text-sm">✓</span>
+        </div>
+      </div>
       <p className="text-xs text-muted-foreground mt-3 text-center">
-        Super Admins always have full access regardless of these settings.
+        Owner and Super Admins always have full access regardless of these settings.
       </p>
 
       <AlertDialog open={!!pending} onOpenChange={(open) => !open && setPending(null)}>

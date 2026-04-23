@@ -62,7 +62,8 @@ export default function Sidebar() {
   const userRole = user?.role || 'employee';
 
   let navItems = [];
-  if (userRole === 'super_admin') navItems = SUPER_ADMIN_NAV;
+  if (userRole === 'owner') navItems = SUPER_ADMIN_NAV;
+  else if (userRole === 'super_admin') navItems = SUPER_ADMIN_NAV;
   else if (userRole === 'operator') {
     navItems = OPERATOR_NAV.filter(item => {
       if (!item.permission) return true;

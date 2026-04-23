@@ -87,7 +87,7 @@ export function usePermissions() {
 }
 
 export function hasPermission(permissions, userRole, permissionKey) {
-  if (userRole === 'super_admin') return true;
+  if (userRole === 'super_admin' || userRole === 'owner') return true;
   if (permissions && (userRole === 'operator' || userRole === 'employee')) {
     return !!permissions[permissionKey];
   }

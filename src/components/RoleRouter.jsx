@@ -8,6 +8,7 @@ export default function RoleRouter() {
 
   const role = user.role || 'employee';
 
+  if (role === 'owner') return <Navigate to="/dashboard" replace />;
   if (role === 'super_admin') return <Navigate to="/dashboard" replace />;
   if (role === 'operator') return <Navigate to="/dashboard" replace />;
   return <Navigate to="/my-tasks" replace />;

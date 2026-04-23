@@ -4,45 +4,26 @@
   "properties": {
     "role": {
       "type": "string",
-      "enum": ["super_admin", "operator", "employee"],
-      "default": "employee",
-      "description": "User role in the system"
+      "enum": [
+        "owner",
+        "super_admin",
+        "operator",
+        "employee"
+      ],
+      "default": "employee"
     },
-    "status": {
+    "contact_phone": {
       "type": "string",
-      "enum": ["active", "inactive"],
-      "default": "active",
-      "description": "Whether the user account is active"
-    },
-    "full_name": {
-      "type": "string",
-      "description": "User's full name, set during onboarding"
+      "description": "Employee phone number"
     },
     "pin_hash": {
       "type": "string",
-      "description": "SHA-256 hash of the user's 4-digit security PIN"
+      "description": "SHA-256 hash of the employee's 4-digit PIN"
     },
     "has_onboarded": {
       "type": "boolean",
       "default": false,
-      "description": "Whether the user has completed the onboarding flow"
-    },
-    "contact_phone": {
-      "type": "string",
-      "description": "Phone number for alert notifications"
-    },
-    "contact_email": {
-      "type": "string",
-      "description": "Email for alert notifications (defaults to login email)"
-    },
-    "profile_photo": {
-      "type": "string",
-      "description": "URL of the user's profile photo"
-    },
-    "phone": {
-      "type": "string",
-      "description": "Legacy phone number field"
+      "description": "Whether the user has completed onboarding"
     }
-  },
-  "required": []
+  }
 }

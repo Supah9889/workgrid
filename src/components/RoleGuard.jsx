@@ -17,6 +17,7 @@ export default function RoleGuard({ allowedRoles, children }) {
   const userRole = user.role || 'employee';
 
   if (!allowedRoles.includes(userRole)) {
+    if (userRole === 'owner') return <Navigate to="/dashboard" replace />;
     if (userRole === 'super_admin') return <Navigate to="/dashboard" replace />;
     if (userRole === 'operator') return <Navigate to="/dashboard" replace />;
     return <Navigate to="/my-tasks" replace />;

@@ -58,22 +58,22 @@ const AuthenticatedApp = () => {
         <Route path="/" element={<RoleRouter />} />
         <Route element={<AppLayout />}>
           <Route path="/dashboard" element={
-            <RoleGuard allowedRoles={['super_admin', 'operator']}>
+            <RoleGuard allowedRoles={['super_admin', 'operator', 'owner']}>
               <SuperAdminDashboard />
             </RoleGuard>
           } />
           <Route path="/employees" element={
-            <RoleGuard allowedRoles={['super_admin']}>
+            <RoleGuard allowedRoles={['super_admin', 'owner']}>
               <EmployeeManagement />
             </RoleGuard>
           } />
           <Route path="/permissions" element={
-            <RoleGuard allowedRoles={['super_admin']}>
+            <RoleGuard allowedRoles={['super_admin', 'owner']}>
               <PermissionsBoard />
             </RoleGuard>
           } />
           <Route path="/tasks" element={
-            <RoleGuard allowedRoles={['super_admin', 'operator']}>
+            <RoleGuard allowedRoles={['super_admin', 'operator', 'owner']}>
               <TaskBoard />
             </RoleGuard>
           } />
@@ -83,32 +83,32 @@ const AuthenticatedApp = () => {
             </RoleGuard>
           } />
           <Route path="/locations" element={
-            <RoleGuard allowedRoles={['super_admin', 'operator']}>
+            <RoleGuard allowedRoles={['super_admin', 'operator', 'owner']}>
               <Locations />
             </RoleGuard>
           } />
           <Route path="/clock-records" element={
-            <RoleGuard allowedRoles={['super_admin', 'operator']}>
+            <RoleGuard allowedRoles={['super_admin', 'operator', 'owner']}>
               <ClockRecords />
             </RoleGuard>
           } />
           <Route path="/employee-profile" element={
-            <RoleGuard allowedRoles={['super_admin']}>
+            <RoleGuard allowedRoles={['super_admin', 'owner']}>
               <EmployeeProfile />
             </RoleGuard>
           } />
           <Route path="/employees/repository" element={
-            <RoleGuard allowedRoles={['super_admin', 'operator']}>
+            <RoleGuard allowedRoles={['super_admin', 'operator', 'owner']}>
               <EmployeeRepository />
             </RoleGuard>
           } />
           <Route path="/audit-log" element={
-            <RoleGuard allowedRoles={['super_admin', 'operator']}>
+            <RoleGuard allowedRoles={['super_admin', 'operator', 'owner']}>
               <AuditLog />
             </RoleGuard>
           } />
           <Route path="/geofence-settings" element={
-            <RoleGuard allowedRoles={['super_admin']}>
+            <RoleGuard allowedRoles={['super_admin', 'owner']}>
               <GeofenceSettings />
             </RoleGuard>
           } />

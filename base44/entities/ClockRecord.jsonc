@@ -23,7 +23,21 @@
     "date": {
       "type": "string",
       "format": "date",
-      "description": "Date of the clock record"
+      "description": "Date of the clock record (YYYY-MM-DD)"
+    },
+    "total_hours": {
+      "type": "number",
+      "description": "Total hours worked (calculated on clock out)"
+    },
+    "open_flag": {
+      "type": "boolean",
+      "default": false,
+      "description": "Flagged if clocked in with no clock out at end of day"
+    },
+    "manually_closed": {
+      "type": "boolean",
+      "default": false,
+      "description": "Admin manually closed this record"
     }
   },
   "required": [

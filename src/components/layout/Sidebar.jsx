@@ -19,7 +19,7 @@ import { useState } from 'react';
 import { cn } from '@/lib/utils';
 
 const NAV_ITEMS = [
-  { path: '/', label: 'Dashboard', icon: LayoutDashboard, roles: ['super_admin'] },
+  { path: '/dashboard', label: 'Dashboard', icon: LayoutDashboard, roles: ['super_admin'] },
   { path: '/employees', label: 'Employees', icon: Users, roles: ['super_admin'] },
   { path: '/permissions', label: 'Permissions', icon: Shield, roles: ['super_admin'] },
   { path: '/tasks', label: 'Task Board', icon: ClipboardList, roles: ['super_admin', 'operator'], permission: 'view_all_tasks' },
@@ -65,7 +65,7 @@ export default function Sidebar() {
       <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
         {visibleItems.map(item => {
           const Icon = item.icon;
-          const isActive = location.pathname === item.path;
+          const isActive = location.pathname === item.path || (item.path === '/dashboard' && location.pathname === '/');
           return (
             <Link
               key={item.path}

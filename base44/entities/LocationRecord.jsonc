@@ -17,6 +17,15 @@
     "longitude": {
       "type": "number",
       "description": "Longitude coordinate"
+    },
+    "updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Last location update timestamp"
+    },
+    "clock_record_id": {
+      "type": "string",
+      "description": "Associated clock record ID"
     }
   },
   "required": [

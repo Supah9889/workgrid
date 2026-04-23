@@ -9,6 +9,7 @@ import { PriorityBadge, StatusBadge } from '@/components/tasks/TaskBadges';
 import { ListTodo, ChevronRight, Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { format } from 'date-fns';
+import ClockButton from '@/components/clock/ClockButton';
 
 const STATUS_NEXT = {
   pending: { label: 'Mark In Progress', next: 'in_progress' },
@@ -132,6 +133,7 @@ export default function MyTasks() {
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
+      <ClockButton user={user} />
       <div className="mb-6">
         <h1 className="text-2xl font-bold tracking-tight">My Tasks</h1>
         <p className="text-muted-foreground text-sm mt-0.5">

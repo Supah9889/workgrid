@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
+import { notifyTaskReassigned, notifyTaskStatusChanged } from '@/lib/notificationService';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -55,6 +56,12 @@ export default function EditTaskDialog({ open, onOpenChange, task, employees = [
     }
 
     await base44.entities.Task.update(task.id, updates);
+    if (form.assigned_to !== task.assigned_to) {
+      await notifyTaskReassigned(task, task.assigned_to, form.assigned_to);
+    }
+    if (form.status !== task.status) {
+      await notifyTaskStatusChanged(task, form.status);
+    }
     setSaving(false);
     onOpenChange(false);
     onSaved?.();

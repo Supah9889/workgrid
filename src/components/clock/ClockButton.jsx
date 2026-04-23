@@ -3,6 +3,7 @@ import { base44 } from '@/api/base44Client';
 import { useToast } from '@/components/ui/use-toast';
 import { differenceInSeconds } from 'date-fns';
 import { logActivity } from '@/lib/activityLogger';
+import { notifyClockIn, notifyClockOut, notifyOutOfBoundsPunch } from '@/lib/notificationService';
 import PinModal from '@/components/clock/PinModal';
 import { Loader2, Coffee, LogIn, LogOut } from 'lucide-react';
 
@@ -152,7 +153,8 @@ export default function ClockButton({ user }) {
     setClockRecord(record);
     startLocationTracking(record.id);
 
-    if (!geo.in_bounds) await notifyAdmins('in', geo.distance);
+    await notifyClockIn(user);
+    if (!geo.in_bounds) await notifyOutOfBoundsPunch(user, 'in', geo.distance);
 
     await logActivity(
       'employee_clocked_in',
@@ -213,7 +215,8 @@ export default function ClockButton({ user }) {
     stopLocationTracking();
     setClockRecord(null);
 
-    if (!geo.in_bounds) await notifyAdmins('out', geo.distance);
+    await notifyClockOut(user, totalHours);
+    if (!geo.in_bounds) await notifyOutOfBoundsPunch(user, 'out', geo.distance);
 
     await logActivity(
       'employee_clocked_out',

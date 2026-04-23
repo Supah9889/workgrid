@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { base44 } from '@/api/base44Client';
+import { notifyTaskAssigned } from '@/lib/notificationService';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
@@ -42,7 +43,8 @@ export default function CreateTaskDialog({ open, onOpenChange, employees = [], o
   const handleSubmit = async () => {
     if (!form.title.trim() || saving) return;
     setSaving(true);
-    await base44.entities.Task.create({ ...form, status: 'pending' });
+    const task = await base44.entities.Task.create({ ...form, status: 'pending' });
+    if (form.assigned_to) await notifyTaskAssigned(task, form.assigned_to);
     setForm(EMPTY_FORM);
     setSaving(false);
     onOpenChange(false);

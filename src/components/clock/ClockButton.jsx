@@ -52,7 +52,15 @@ export default function ClockButton({ user }) {
   const [loading, setLoading] = useState(true);
   const [actionLoading, setActionLoading] = useState(false);
   const [pendingAction, setPendingAction] = useState(null);
+  const [expectedHash, setExpectedHash] = useState(null);
   const [appSettings, setAppSettings] = useState(null);
+
+  const openPinModal = async (action) => {
+    const users = await base44.entities.User.filter({ email: user.email });
+    const fresh = users?.[0];
+    setExpectedHash(fresh?.pin_hash || user.pin_hash || null);
+    setPendingAction(action);
+  };
   const locationIntervalRef = useRef(null);
 
   useEffect(() => {
@@ -266,7 +274,7 @@ export default function ClockButton({ user }) {
             pendingAction === 'lunch_start' ? 'Start Lunch' :
             pendingAction === 'lunch_end' ? 'End Lunch' : 'Punch Out'
           }
-          expectedHash={user.pin_hash}
+          expectedHash={expectedHash}
           onSuccess={handlePinSuccess}
           onCancel={() => setPendingAction(null)}
         />
@@ -303,7 +311,7 @@ export default function ClockButton({ user }) {
               <Loader2 className="w-5 h-5 text-slate-400 animate-spin" />
             ) : !isClockedIn ? (
               <button
-                onClick={() => setPendingAction('punch_in')}
+                onClick={() => openPinModal('punch_in')}
                 className={`${btnCls} bg-emerald-600 hover:bg-emerald-500 text-white`}
               >
                 <LogIn className="w-3.5 h-3.5" /> Punch In
@@ -312,7 +320,7 @@ export default function ClockButton({ user }) {
               <>
                 {!hasHadLunch && (
                   <button
-                    onClick={() => setPendingAction(isOnLunch ? 'lunch_end' : 'lunch_start')}
+                    onClick={() => openPinModal(isOnLunch ? 'lunch_end' : 'lunch_start')}
                     className={`${btnCls} ${
                       isOnLunch
                         ? 'bg-yellow-600 hover:bg-yellow-500 text-white'
@@ -324,7 +332,7 @@ export default function ClockButton({ user }) {
                   </button>
                 )}
                 <button
-                  onClick={() => setPendingAction('punch_out')}
+                  onClick={() => openPinModal('punch_out')}
                   className={`${btnCls} bg-red-600/80 hover:bg-red-600 text-white`}
                 >
                   <LogOut className="w-3.5 h-3.5" /> Punch Out

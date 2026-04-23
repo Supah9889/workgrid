@@ -79,7 +79,7 @@ export default function PinModal({ title = 'Enter Your PIN', onSuccess, onCancel
               key={i}
               onClick={() => isBack ? removeDigit() : addDigit(key)}
               disabled={checking && !isBack}
-              className={`h-16 rounded-2xl text-xl font-semibold transition-all active:scale-95 select-none ${
+              className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl text-xl font-semibold transition-all active:scale-95 select-none ${
                 isBack
                   ? 'bg-slate-800 hover:bg-slate-700 text-slate-300 flex items-center justify-center'
                   : digits.length >= 4 || checking

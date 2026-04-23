@@ -53,7 +53,7 @@ const EMPLOYEE_NAV = [
   { path: '/contact-directory', label: 'My Contact Info',  icon: BookUser },
 ];
 
-export default function Sidebar() {
+export default function Sidebar({ onClose }) {
   const { user } = useAuth();
   const { permissions } = usePermissions();
   const location = useLocation();
@@ -103,6 +103,7 @@ export default function Sidebar() {
             <Link
               key={item.path}
               to={item.path}
+              onClick={() => onClose?.()}
               className={cn(
                 "flex items-center gap-2.5 px-2.5 py-2 rounded-md text-sm font-medium transition-all",
                 active
@@ -116,6 +117,30 @@ export default function Sidebar() {
             </Link>
           );
         })}
+      </nav>
+
+      {/* Mobile bottom nav */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-card border-t border-border flex items-center justify-around px-2 py-1">
+        {[
+          { path: '/dashboard', icon: LayoutDashboard, label: 'Home', roles: ['owner','super_admin','operator'] },
+          { path: '/tasks', icon: ClipboardList, label: 'Tasks', roles: ['owner','super_admin','operator'] },
+          { path: '/my-tasks', icon: ListTodo, label: 'My Tasks', roles: ['employee'] },
+          { path: '/clock-records', icon: Clock, label: 'Clock', roles: ['owner','super_admin','operator'] },
+          { path: '/my-tasks', icon: Clock, label: 'Clock', roles: ['employee'] },
+        ]
+          .filter(item => item.roles.includes(userRole))
+          .slice(0, 4)
+          .map(item => {
+            const Icon = item.icon;
+            const active = location.pathname === item.path;
+            return (
+              <Link key={item.label} to={item.path} onClick={() => onClose?.()}
+                className={`flex flex-col items-center gap-0.5 px-3 py-2 rounded-lg transition-colors ${active ? 'text-primary' : 'text-muted-foreground'}`}>
+                <Icon className="w-5 h-5" />
+                <span className="text-[10px]">{item.label}</span>
+              </Link>
+            );
+          })}
       </nav>
 
       {/* Bottom */}

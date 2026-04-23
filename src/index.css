@@ -88,3 +88,17 @@
     @apply bg-background text-foreground font-inter;
   }
 }
+
+/* Mobile optimizations */
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+html {
+  -webkit-text-size-adjust: 100%;
+}
+button, a {
+  min-height: 44px;
+}
+.scroll-smooth {
+  -webkit-overflow-scrolling: touch;
+}

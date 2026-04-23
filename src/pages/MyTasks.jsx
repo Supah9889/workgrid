@@ -212,7 +212,7 @@ export default function MyTasks() {
 
       {user && <div className="px-4 pt-4"><ClockButton user={user} /></div>}
 
-      <div className="px-4 py-4 pb-24 space-y-3">
+      <div className="px-4 py-4 pb-28 space-y-3">
         {isLoading ? (
           <div className="flex justify-center py-24">
             <div className="w-8 h-8 border-4 border-slate-700 border-t-blue-500 rounded-full animate-spin" />

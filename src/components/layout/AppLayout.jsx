@@ -1,18 +1,31 @@
+import { useState } from 'react';
 import { Outlet } from 'react-router-dom';
 import Sidebar from './Sidebar';
 import NotificationBell from '@/components/notifications/NotificationBell';
 import ChatPanel from '@/components/chat/ChatPanel';
 import { useAuth } from '@/lib/AuthContext';
+import { Menu } from 'lucide-react';
 
 export default function AppLayout() {
   const { user } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
     <div className="flex min-h-screen bg-background">
-      <Sidebar />
+      <>
+        {sidebarOpen && (
+          <div className="fixed inset-0 bg-black/60 z-40 md:hidden" onClick={() => setSidebarOpen(false)} />
+        )}
+        <div className={`fixed inset-y-0 left-0 z-50 md:relative md:block transition-transform duration-200 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0'}`}>
+          <Sidebar onClose={() => setSidebarOpen(false)} />
+        </div>
+      </>
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top bar */}
         <header className="h-11 border-b border-border bg-card flex items-center justify-end px-5 gap-3 flex-shrink-0">
+          <button onClick={() => setSidebarOpen(true)} className="md:hidden p-2 rounded-md hover:bg-muted transition-colors mr-2">
+            <Menu className="w-5 h-5" />
+          </button>
           <NotificationBell />
           <div className="w-px h-5 bg-border" />
           <div className="flex items-center gap-2">

@@ -2,102 +2,145 @@ import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
-import { Button } from '@/components/ui/button';
-import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent } from '@/components/ui/card';
+import { Loader2, MapPin, Clock, Package, Building2, ChevronDown, ChevronUp, ListTodo } from 'lucide-react';
 import { PriorityBadge, StatusBadge } from '@/components/tasks/TaskBadges';
-import { ListTodo, ChevronRight, Loader2 } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import { format } from 'date-fns';
-import ClockButton from '@/components/clock/ClockButton';
 
 const STATUS_NEXT = {
-  pending: { label: 'Mark In Progress', next: 'in_progress' },
-  in_progress: { label: 'Mark Complete', next: 'complete' },
+  pending:   { label: 'Mark as Picked Up', next: 'picked_up' },
+  picked_up: { label: 'Mark En Route',     next: 'en_route'  },
+  en_route:  { label: 'Mark Delivered',    next: 'delivered'  },
 };
 
-function TaskCard({ task, onUpdated }) {
+const STATUS_SECTION = {
+  pending:   { label: 'Pending',    color: 'text-slate-400'  },
+  picked_up: { label: 'Picked Up', color: 'text-yellow-400' },
+  en_route:  { label: 'En Route',  color: 'text-blue-400'   },
+  delivered: { label: 'Delivered', color: 'text-emerald-400' },
+};
+
+function DeliveryCard({ task, onUpdated }) {
   const { toast } = useToast();
-  const [notes, setNotes] = useState(task.notes || '');
-  const [saving, setSaving] = useState(false);
   const [expanded, setExpanded] = useState(false);
-
-  const handleStatusUpdate = async () => {
-    const advance = STATUS_NEXT[task.status];
-    if (!advance) return;
-    setSaving(true);
-    await base44.entities.Task.update(task.id, { status: advance.next });
-    toast({ title: `Task marked as ${advance.next.replace('_', ' ')}` });
-    onUpdated();
-    setSaving(false);
-  };
-
-  const handleSaveNotes = async () => {
-    setSaving(true);
-    await base44.entities.Task.update(task.id, { notes });
-    toast({ title: 'Notes saved' });
-    onUpdated();
-    setSaving(false);
-  };
+  const [saving, setSaving] = useState(false);
 
   const advance = STATUS_NEXT[task.status];
 
+  const handleAdvance = async (e) => {
+    e.stopPropagation();
+    if (!advance || saving) return;
+    setSaving(true);
+    await base44.entities.Task.update(task.id, { status: advance.next });
+    toast({ title: `Status updated to ${STATUS_SECTION[advance.next]?.label}` });
+    onUpdated();
+    setSaving(false);
+  };
+
   return (
-    <Card className="overflow-hidden">
-      <CardContent className="p-0">
-        <div className="flex items-center gap-3 p-4">
-          <div className="flex-1 min-w-0">
-            <p className="font-semibold">{task.title}</p>
-            {task.description && (
-              <p className="text-xs text-muted-foreground mt-0.5 truncate">{task.description}</p>
+    <div
+      onClick={() => setExpanded(v => !v)}
+      className="rounded-xl border border-slate-700 bg-slate-800/60 hover:bg-slate-800 cursor-pointer transition-all select-none"
+    >
+      {/* Condensed header */}
+      <div className="flex items-start gap-3 p-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap mb-1.5">
+            <PriorityBadge priority={task.priority} />
+            <StatusBadge status={task.status} />
+          </div>
+          <p className="font-semibold text-white leading-snug">{task.title}</p>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-xs text-slate-400">
+            {task.delivery_address && (
+              <span className="flex items-center gap-1 truncate col-span-2">
+                <MapPin className="w-3 h-3 flex-shrink-0" />
+                <span className="truncate">{task.delivery_address}</span>
+              </span>
+            )}
+            {task.scheduled_time && (
+              <span className="flex items-center gap-1 truncate">
+                <Clock className="w-3 h-3 flex-shrink-0" />
+                <span className="truncate">
+                  {(() => {
+                    try { return format(new Date(task.scheduled_time), 'MMM d, h:mm a'); }
+                    catch { return task.scheduled_time; }
+                  })()}
+                </span>
+              </span>
+            )}
+            {task.requested_by && (
+              <span className="flex items-center gap-1 truncate">
+                <Building2 className="w-3 h-3 flex-shrink-0" />
+                <span className="truncate">{task.requested_by}</span>
+              </span>
             )}
           </div>
-          <PriorityBadge priority={task.priority} />
-          <StatusBadge status={task.status} />
-          <Button variant="ghost" size="icon" className="h-8 w-8" onClick={() => setExpanded(!expanded)}>
-            <ChevronRight className={`w-4 h-4 transition-transform ${expanded ? 'rotate-90' : ''}`} />
-          </Button>
         </div>
+        <div className="text-slate-500 mt-1 flex-shrink-0">
+          {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        </div>
+      </div>
 
-        {expanded && (
-          <div className="border-t px-4 pb-4 pt-3 space-y-3">
-            {task.description && (
-              <p className="text-sm text-muted-foreground">{task.description}</p>
-            )}
-            <div className="space-y-2">
-              <label className="text-xs font-medium text-muted-foreground uppercase tracking-wide">
-                Add a note for your manager
-              </label>
-              <Textarea
-                placeholder="Type a note here..."
-                value={notes}
-                onChange={e => setNotes(e.target.value)}
-                rows={2}
-                className="text-sm"
-              />
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleSaveNotes}
-                disabled={saving || notes === task.notes}
-              >
-                {saving && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
-                Save Note
-              </Button>
+      {/* Expanded details */}
+      {expanded && (
+        <div
+          onClick={e => e.stopPropagation()}
+          className="border-t border-slate-700 px-4 pb-4 pt-3 space-y-3"
+        >
+          {task.part_description && (
+            <div>
+              <p className="text-xs text-slate-500 uppercase tracking-wide font-medium mb-0.5">Part</p>
+              <p className="text-sm text-slate-200 flex items-center gap-1.5">
+                <Package className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                {task.part_description}
+              </p>
             </div>
+          )}
+          {task.store_name && (
+            <div>
+              <p className="text-xs text-slate-500 uppercase tracking-wide font-medium mb-0.5">Pick Up From</p>
+              <p className="text-sm text-slate-200">{task.store_name}</p>
+            </div>
+          )}
+          {task.delivery_address && (
+            <div>
+              <p className="text-xs text-slate-500 uppercase tracking-wide font-medium mb-0.5">Deliver To</p>
+              <p className="text-sm text-slate-200">{task.delivery_address}</p>
+            </div>
+          )}
+          {task.requested_by && (
+            <div>
+              <p className="text-xs text-slate-500 uppercase tracking-wide font-medium mb-0.5">Requested By</p>
+              <p className="text-sm text-slate-200">{task.requested_by}</p>
+            </div>
+          )}
+          {task.notes && (
+            <div>
+              <p className="text-xs text-slate-500 uppercase tracking-wide font-medium mb-0.5">Notes from Admin</p>
+              <p className="text-sm text-slate-300 bg-slate-900/60 rounded-lg p-2.5">{task.notes}</p>
+            </div>
+          )}
 
-            {advance && (
-              <Button size="sm" onClick={handleStatusUpdate} disabled={saving} className="w-full">
-                {saving && <Loader2 className="w-3 h-3 mr-1 animate-spin" />}
-                {advance.label}
-              </Button>
-            )}
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          {advance && (
+            <div
+              onClick={handleAdvance}
+              className={`mt-1 w-full text-center py-2.5 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-2 ${
+                saving
+                  ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
+                  : 'bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white cursor-pointer'
+              }`}
+            >
+              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
+              {advance.label}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
+
+const STATUS_ORDER = ['pending', 'picked_up', 'en_route', 'delivered'];
 
 export default function MyTasks() {
   const { user } = useAuth();
@@ -105,82 +148,84 @@ export default function MyTasks() {
 
   const { data: tasks = [], isLoading } = useQuery({
     queryKey: ['my-tasks', user?.email],
-    queryFn: () => base44.entities.Task.filter({ assigned_employee: user.email }),
+    queryFn: () => base44.entities.Task.filter({ assigned_to: user.email }),
     enabled: !!user?.email,
   });
 
   useEffect(() => {
     if (!user?.email) return;
-    const unsubscribe = base44.entities.Task.subscribe(() => {
-      queryClient.invalidateQueries({ queryKey: ['my-tasks', user.email] });
-    });
-    return unsubscribe;
+    const unsub = base44.entities.Task.subscribe(() =>
+      queryClient.invalidateQueries({ queryKey: ['my-tasks', user.email] })
+    );
+    return unsub;
   }, [user?.email, queryClient]);
-
-  const pending = tasks.filter(t => t.status === 'pending');
-  const inProgress = tasks.filter(t => t.status === 'in_progress');
-  const complete = tasks.filter(t => t.status === 'complete');
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['my-tasks', user?.email] });
 
-  return (
-    <div className="p-6 max-w-2xl mx-auto">
-      {user && <ClockButton user={user} />}
+  const grouped = STATUS_ORDER.reduce((acc, s) => {
+    acc[s] = tasks.filter(t => t.status === s);
+    return acc;
+  }, {});
 
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold tracking-tight">My Tasks</h1>
-        <p className="text-muted-foreground text-sm mt-0.5">
-          {format(new Date(), 'EEEE, MMMM d, yyyy')}
+  const active = tasks.filter(t => t.status !== 'delivered');
+  const delivered = tasks.filter(t => t.status === 'delivered');
+
+  return (
+    <div className="min-h-screen bg-[#0f172a]">
+      {/* Header */}
+      <div className="px-4 pt-6 pb-4 border-b border-slate-800">
+        <h1 className="text-xl font-bold text-white tracking-tight">My Deliveries</h1>
+        <p className="text-slate-400 text-xs mt-0.5">
+          {format(new Date(), 'EEEE, MMMM d')}
           {!isLoading && ` · ${tasks.length} task${tasks.length !== 1 ? 's' : ''} assigned`}
         </p>
       </div>
 
-      {isLoading ? (
-        <div className="flex justify-center py-24">
-          <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
-        </div>
-      ) : tasks.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24 text-center">
-          <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center mb-4">
-            <ListTodo className="w-7 h-7 text-muted-foreground" />
+      <div className="px-4 py-4 pb-24 space-y-3">
+        {isLoading ? (
+          <div className="flex justify-center py-24">
+            <div className="w-8 h-8 border-4 border-slate-700 border-t-blue-500 rounded-full animate-spin" />
           </div>
-          <h2 className="text-lg font-semibold mb-1">No tasks assigned yet today</h2>
-          <p className="text-sm text-muted-foreground">Your manager will assign tasks here when they're ready.</p>
-        </div>
-      ) : (
-        <div className="space-y-6">
-          {inProgress.length > 0 && (
-            <section>
-              <h2 className="text-xs font-semibold uppercase tracking-wide text-blue-600 mb-2">
-                In Progress ({inProgress.length})
-              </h2>
-              <div className="space-y-2">
-                {inProgress.map(t => <TaskCard key={t.id} task={t} onUpdated={refresh} />)}
+        ) : tasks.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <div className="w-16 h-16 rounded-2xl bg-slate-800 flex items-center justify-center mb-4">
+              <ListTodo className="w-7 h-7 text-slate-500" />
+            </div>
+            <p className="text-slate-300 font-semibold text-lg">No deliveries yet</p>
+            <p className="text-slate-500 text-sm mt-1">Your manager will assign tasks here.</p>
+          </div>
+        ) : (
+          <>
+            {STATUS_ORDER.filter(s => s !== 'delivered').map(status => (
+              grouped[status].length > 0 && (
+                <div key={status}>
+                  <p className={`text-xs font-semibold uppercase tracking-wide mb-2 ${STATUS_SECTION[status].color}`}>
+                    {STATUS_SECTION[status].label} ({grouped[status].length})
+                  </p>
+                  <div className="space-y-2">
+                    {grouped[status].map(t => (
+                      <DeliveryCard key={t.id} task={t} onUpdated={refresh} />
+                    ))}
+                  </div>
+                </div>
+              )
+            ))}
+
+            {delivered.length > 0 && (
+              <div className="mt-4">
+                <p className="text-xs font-semibold text-emerald-400 uppercase tracking-wide mb-2">
+                  Delivered ({delivered.length})
+                </p>
+                <div className="space-y-2">
+                  {delivered.map(t => (
+                    <DeliveryCard key={t.id} task={t} onUpdated={refresh} />
+                  ))}
+                </div>
               </div>
-            </section>
-          )}
-          {pending.length > 0 && (
-            <section>
-              <h2 className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-2">
-                Pending ({pending.length})
-              </h2>
-              <div className="space-y-2">
-                {pending.map(t => <TaskCard key={t.id} task={t} onUpdated={refresh} />)}
-              </div>
-            </section>
-          )}
-          {complete.length > 0 && (
-            <section>
-              <h2 className="text-xs font-semibold uppercase tracking-wide text-emerald-600 mb-2">
-                Complete ({complete.length})
-              </h2>
-              <div className="space-y-2">
-                {complete.map(t => <TaskCard key={t.id} task={t} onUpdated={refresh} />)}
-              </div>
-            </section>
-          )}
-        </div>
-      )}
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }

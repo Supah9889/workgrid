@@ -7,15 +7,17 @@ const PRIORITY_STYLES = {
 };
 
 const STATUS_STYLES = {
-  in_progress: 'bg-blue-100 text-blue-700 border-blue-200',
-  complete: 'bg-green-100 text-green-700 border-green-200',
   pending: 'bg-slate-100 text-slate-600 border-slate-200',
+  picked_up: 'bg-yellow-100 text-yellow-700 border-yellow-200',
+  en_route: 'bg-blue-100 text-blue-700 border-blue-200',
+  delivered: 'bg-green-100 text-green-700 border-green-200',
 };
 
 const STATUS_LABELS = {
-  in_progress: 'In Progress',
-  complete: 'Complete',
   pending: 'Pending',
+  picked_up: 'Picked Up',
+  en_route: 'En Route',
+  delivered: 'Delivered',
 };
 
 export function PriorityBadge({ priority }) {

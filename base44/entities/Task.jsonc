@@ -4,11 +4,50 @@
   "properties": {
     "title": {
       "type": "string",
-      "description": "Task title"
+      "description": "What the delivery is"
     },
-    "description": {
+    "part_description": {
       "type": "string",
-      "description": "Task description"
+      "description": "Specific part being delivered, e.g. 42in deck belt - Husqvarna YTH24V48"
+    },
+    "assigned_to": {
+      "type": "string",
+      "description": "Email of the assigned employee"
+    },
+    "assigned_to_name": {
+      "type": "string",
+      "description": "Display name of the assigned employee"
+    },
+    "delivery_address": {
+      "type": "string",
+      "description": "Full delivery address"
+    },
+    "store_name": {
+      "type": "string",
+      "description": "Store to pick up from, e.g. Lowes, Home Depot"
+    },
+    "requested_by": {
+      "type": "string",
+      "description": "Insurance company or party that requested the delivery"
+    },
+    "scheduled_time": {
+      "type": "string",
+      "description": "When the delivery is scheduled"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Pre-task notes from admin, visible to employee"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "pending",
+        "picked_up",
+        "en_route",
+        "delivered"
+      ],
+      "default": "pending",
+      "description": "Current delivery status"
     },
     "priority": {
       "type": "string",
@@ -18,29 +57,7 @@
         "high"
       ],
       "default": "medium",
-      "description": "Task priority level"
-    },
-    "status": {
-      "type": "string",
-      "enum": [
-        "pending",
-        "in_progress",
-        "complete"
-      ],
-      "default": "pending",
-      "description": "Current task status"
-    },
-    "assigned_employee": {
-      "type": "string",
-      "description": "Email of the assigned employee"
-    },
-    "assigned_employee_name": {
-      "type": "string",
-      "description": "Name of the assigned employee"
-    },
-    "notes": {
-      "type": "string",
-      "description": "Employee notes visible to admin"
+      "description": "Delivery priority level"
     },
     "reassignment_log": {
       "type": "array",
@@ -48,21 +65,11 @@
       "items": {
         "type": "object",
         "properties": {
-          "from_email": {
-            "type": "string"
-          },
-          "from_name": {
-            "type": "string"
-          },
-          "to_email": {
-            "type": "string"
-          },
-          "to_name": {
-            "type": "string"
-          },
-          "reassigned_at": {
-            "type": "string"
-          }
+          "from_email": { "type": "string" },
+          "from_name": { "type": "string" },
+          "to_email": { "type": "string" },
+          "to_name": { "type": "string" },
+          "reassigned_at": { "type": "string" }
         }
       }
     }

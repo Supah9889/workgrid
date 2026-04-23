@@ -1,7 +1,7 @@
 import { Toaster } from "@/components/ui/toaster"
 import { QueryClientProvider } from '@tanstack/react-query'
 import { queryClientInstance } from '@/lib/query-client'
-import { BrowserRouter as Router, Route, Routes } from 'react-router-dom';
+import { BrowserRouter as Router, Route, Routes, Navigate, useLocation } from 'react-router-dom';
 import PageNotFound from './lib/PageNotFound';
 import { AuthProvider, useAuth } from '@/lib/AuthContext';
 import UserNotRegisteredError from '@/components/UserNotRegisteredError';
@@ -19,9 +19,11 @@ import MyTasks from '@/pages/MyTasks';
 import Locations from '@/pages/Locations';
 import ClockRecords from '@/pages/ClockRecords';
 import EmployeeProfile from '@/pages/EmployeeProfile';
+import Onboarding from '@/pages/Onboarding';
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, needsOnboarding } = useAuth();
+  const location = useLocation();
 
   if (isLoadingPublicSettings || isLoadingAuth) {
     return (
@@ -43,9 +45,15 @@ const AuthenticatedApp = () => {
     }
   }
 
+  // Redirect to onboarding if user hasn't set up their account yet
+  if (needsOnboarding && location.pathname !== '/onboarding') {
+    return <Navigate to="/onboarding" replace />;
+  }
+
   return (
     <PermissionsProvider>
       <Routes>
+        <Route path="/onboarding" element={<Onboarding />} />
         <Route path="/" element={<RoleRouter />} />
         <Route element={<AppLayout />}>
           <Route path="/dashboard" element={

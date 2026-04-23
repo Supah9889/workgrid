@@ -1,85 +1,217 @@
-import { useEffect } from 'react';
-import { useAuth } from '@/lib/AuthContext';
+import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { startOfDay, endOfDay } from 'date-fns';
-import LiveSummaryBar from '@/components/dashboard/LiveSummaryBar';
-import TasksPanel from '@/components/dashboard/TasksPanel';
-import EmployeeStatusPanel from '@/components/dashboard/EmployeeStatusPanel';
-import ActivityFeedPanel from '@/components/dashboard/ActivityFeedPanel';
+import { Plus, MapPin, Clock, Package, Building2, ChevronDown, ChevronUp, User } from 'lucide-react';
+import { PriorityBadge, StatusBadge } from '@/components/tasks/TaskBadges';
+import CreateTaskDialog from '@/components/tasks/CreateTaskDialog';
+import { format } from 'date-fns';
 
-const PANEL_HEIGHT = 'h-[calc(100vh-220px)]';
+function TaskCard({ task, employees }) {
+  const [expanded, setExpanded] = useState(false);
+  const isUnassigned = !task.assigned_to;
+  const empName = task.assigned_to_name || (employees.find(e => e.email === task.assigned_to)?.full_name) || 'Unassigned';
+
+  return (
+    <div
+      onClick={() => setExpanded(v => !v)}
+      className={`rounded-xl border cursor-pointer transition-all select-none ${
+        isUnassigned
+          ? 'border-orange-500/50 bg-orange-500/10 hover:bg-orange-500/15'
+          : 'border-slate-700 bg-slate-800/60 hover:bg-slate-800'
+      }`}
+    >
+      {/* Condensed header */}
+      <div className="flex items-start gap-3 p-4">
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 flex-wrap mb-1.5">
+            {isUnassigned && (
+              <span className="text-xs font-semibold text-orange-400 bg-orange-500/20 px-2 py-0.5 rounded-full">
+                UNASSIGNED
+              </span>
+            )}
+            <PriorityBadge priority={task.priority} />
+            <StatusBadge status={task.status} />
+          </div>
+          <p className="font-semibold text-white leading-snug">{task.title}</p>
+          <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-xs text-slate-400">
+            <span className="flex items-center gap-1 truncate">
+              <User className="w-3 h-3 flex-shrink-0" />
+              {isUnassigned ? <span className="text-orange-400">Unassigned</span> : empName}
+            </span>
+            {task.delivery_address && (
+              <span className="flex items-center gap-1 truncate">
+                <MapPin className="w-3 h-3 flex-shrink-0" />
+                <span className="truncate">{task.delivery_address}</span>
+              </span>
+            )}
+            {task.scheduled_time && (
+              <span className="flex items-center gap-1 truncate">
+                <Clock className="w-3 h-3 flex-shrink-0" />
+                <span className="truncate">
+                  {(() => {
+                    try { return format(new Date(task.scheduled_time), 'MMM d, h:mm a'); }
+                    catch { return task.scheduled_time; }
+                  })()}
+                </span>
+              </span>
+            )}
+            {task.requested_by && (
+              <span className="flex items-center gap-1 truncate">
+                <Building2 className="w-3 h-3 flex-shrink-0" />
+                <span className="truncate">{task.requested_by}</span>
+              </span>
+            )}
+          </div>
+        </div>
+        <div className="text-slate-500 mt-1 flex-shrink-0">
+          {expanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+        </div>
+      </div>
+
+      {/* Expanded details */}
+      {expanded && (
+        <div
+          onClick={e => e.stopPropagation()}
+          className="border-t border-slate-700 px-4 pb-4 pt-3 space-y-3"
+        >
+          {task.part_description && (
+            <div>
+              <p className="text-xs text-slate-500 uppercase tracking-wide font-medium mb-0.5">Part</p>
+              <p className="text-sm text-slate-200 flex items-center gap-1.5">
+                <Package className="w-3.5 h-3.5 text-slate-400 flex-shrink-0" />
+                {task.part_description}
+              </p>
+            </div>
+          )}
+          {task.store_name && (
+            <div>
+              <p className="text-xs text-slate-500 uppercase tracking-wide font-medium mb-0.5">Store</p>
+              <p className="text-sm text-slate-200">{task.store_name}</p>
+            </div>
+          )}
+          {task.delivery_address && (
+            <div>
+              <p className="text-xs text-slate-500 uppercase tracking-wide font-medium mb-0.5">Delivery Address</p>
+              <p className="text-sm text-slate-200">{task.delivery_address}</p>
+            </div>
+          )}
+          {task.requested_by && (
+            <div>
+              <p className="text-xs text-slate-500 uppercase tracking-wide font-medium mb-0.5">Requested By</p>
+              <p className="text-sm text-slate-200">{task.requested_by}</p>
+            </div>
+          )}
+          {task.notes && (
+            <div>
+              <p className="text-xs text-slate-500 uppercase tracking-wide font-medium mb-0.5">Notes</p>
+              <p className="text-sm text-slate-300 bg-slate-900/60 rounded-lg p-2.5">{task.notes}</p>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
 
 export default function SuperAdminDashboard() {
-  const { user } = useAuth();
   const queryClient = useQueryClient();
-  const today = new Date().toISOString().split('T')[0];
+  const [createOpen, setCreateOpen] = useState(false);
 
-  const { data: users = [] } = useQuery({
-    queryKey: ['dash-users'],
-    queryFn: () => base44.entities.User.list(),
-  });
-
-  const { data: allTasks = [] } = useQuery({
+  const { data: allTasks = [], isLoading } = useQuery({
     queryKey: ['dashboard-tasks'],
     queryFn: () => base44.entities.Task.list('-created_date', 200),
   });
 
-  const { data: clockRecordsToday = [] } = useQuery({
-    queryKey: ['dash-clock', today],
-    queryFn: () => base44.entities.ClockRecord.filter({ date: today }),
-    refetchInterval: 30000,
+  const { data: employees = [] } = useQuery({
+    queryKey: ['dash-employees'],
+    queryFn: async () => {
+      const users = await base44.entities.User.list();
+      return users.filter(u => u.role !== 'super_admin' && u.status !== 'inactive');
+    },
   });
 
   useEffect(() => {
-    const u1 = base44.entities.Task.subscribe(() => queryClient.invalidateQueries({ queryKey: ['dashboard-tasks'] }));
-    const u2 = base44.entities.ClockRecord.subscribe(() => queryClient.invalidateQueries({ queryKey: ['dash-clock', today] }));
-    const u3 = base44.entities.User.subscribe(() => queryClient.invalidateQueries({ queryKey: ['dash-users'] }));
-    return () => { u1(); u2(); u3(); };
-  }, [queryClient, today]);
+    const unsub = base44.entities.Task.subscribe(() =>
+      queryClient.invalidateQueries({ queryKey: ['dashboard-tasks'] })
+    );
+    return unsub;
+  }, [queryClient]);
 
-  const activeEmployees = users.filter(u => u.status !== 'inactive' && u.role !== 'super_admin');
-  const clockedInRecords = clockRecordsToday.filter(r => !r.clock_out && !r.manually_closed);
-  const openClockRecords = clockRecordsToday.filter(r => r.open_flag);
-  const todayTasks = allTasks.filter(t => t.created_date?.startsWith(today));
+  const unassigned = allTasks.filter(t => !t.assigned_to);
+  const assigned = allTasks.filter(t => !!t.assigned_to);
 
   return (
-    <div className="p-5 max-w-[1600px] mx-auto">
-      <div className="mb-4">
-        <h1 className="text-xl font-bold tracking-tight">
-          Command Center
-        </h1>
-        <p className="text-muted-foreground text-xs mt-0.5">Live operations overview — {new Date().toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}</p>
+    <div className="min-h-screen bg-[#0f172a]">
+      {/* Header */}
+      <div className="px-4 pt-6 pb-4 border-b border-slate-800">
+        <h1 className="text-xl font-bold text-white tracking-tight">WorkGrid</h1>
+        <p className="text-slate-400 text-xs mt-0.5">
+          {format(new Date(), 'EEEE, MMMM d')}
+          {!isLoading && ` · ${allTasks.length} task${allTasks.length !== 1 ? 's' : ''}`}
+          {unassigned.length > 0 && (
+            <span className="text-orange-400"> · {unassigned.length} unassigned</span>
+          )}
+        </p>
       </div>
 
-      <LiveSummaryBar
-        employees={activeEmployees.length}
-        clockedInCount={clockedInRecords.length}
-        tasks={allTasks}
-        openClockCount={openClockRecords.length}
+      {/* Task list */}
+      <div className="px-4 py-4 pb-24 space-y-3">
+        {isLoading ? (
+          <div className="flex justify-center py-24">
+            <div className="w-8 h-8 border-4 border-slate-700 border-t-blue-500 rounded-full animate-spin" />
+          </div>
+        ) : allTasks.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 text-center">
+            <p className="text-slate-400 font-medium text-lg">No tasks yet</p>
+            <p className="text-slate-600 text-sm mt-1">Tap + to create the first delivery</p>
+          </div>
+        ) : (
+          <>
+            {unassigned.length > 0 && (
+              <div>
+                <p className="text-xs font-semibold text-orange-400 uppercase tracking-wide mb-2">
+                  Unassigned ({unassigned.length})
+                </p>
+                <div className="space-y-2">
+                  {unassigned.map(t => (
+                    <TaskCard key={t.id} task={t} employees={employees} />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {assigned.length > 0 && (
+              <div className={unassigned.length > 0 ? 'mt-4' : ''}>
+                {unassigned.length > 0 && (
+                  <p className="text-xs font-semibold text-slate-400 uppercase tracking-wide mb-2">
+                    Assigned ({assigned.length})
+                  </p>
+                )}
+                <div className="space-y-2">
+                  {assigned.map(t => (
+                    <TaskCard key={t.id} task={t} employees={employees} />
+                  ))}
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </div>
+
+      {/* Floating + button */}
+      <div
+        onClick={() => setCreateOpen(true)}
+        className="fixed bottom-6 right-6 w-14 h-14 rounded-full bg-blue-600 hover:bg-blue-500 active:scale-95 transition-all flex items-center justify-center cursor-pointer shadow-lg shadow-blue-500/30 z-50"
+      >
+        <Plus className="w-6 h-6 text-white" />
+      </div>
+
+      <CreateTaskDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        employees={employees}
+        onCreated={() => queryClient.invalidateQueries({ queryKey: ['dashboard-tasks'] })}
       />
-
-      {/* Three-panel layout */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
-        {/* Left: Tasks */}
-        <div className={`rounded-xl border border-border bg-card p-4 flex flex-col ${PANEL_HEIGHT} overflow-hidden`}>
-          <TasksPanel tasks={allTasks} employees={activeEmployees} />
-        </div>
-
-        {/* Center: Employee Status */}
-        <div className={`rounded-xl border border-border bg-card p-4 flex flex-col ${PANEL_HEIGHT} overflow-hidden`}>
-          <EmployeeStatusPanel
-            employees={activeEmployees}
-            clockedInRecords={clockedInRecords}
-            todayTasks={todayTasks}
-          />
-        </div>
-
-        {/* Right: Activity Feed */}
-        <div className={`rounded-xl border border-border bg-card p-4 flex flex-col ${PANEL_HEIGHT} overflow-hidden`}>
-          <ActivityFeedPanel />
-        </div>
-      </div>
     </div>
   );
 }

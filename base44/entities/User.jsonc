@@ -28,6 +28,19 @@
     "phone": {
       "type": "string",
       "description": "User's phone number"
+    },
+    "full_name": {
+      "type": "string",
+      "description": "User's full name, set during onboarding"
+    },
+    "pin_hash": {
+      "type": "string",
+      "description": "SHA-256 hash of the user's 4-digit security PIN"
+    },
+    "has_onboarded": {
+      "type": "boolean",
+      "default": false,
+      "description": "Whether the user has completed the onboarding flow"
     }
   },
   "required": []

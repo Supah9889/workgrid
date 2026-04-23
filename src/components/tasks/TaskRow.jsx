@@ -8,9 +8,11 @@ export default function TaskRow({ task, onEdit }) {
     <div className="flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors border-b last:border-b-0">
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">{task.title}</p>
-        {task.assigned_employee_name && (
-          <p className="text-xs text-muted-foreground truncate">{task.assigned_employee_name}</p>
-        )}
+        <p className="text-xs text-muted-foreground truncate">
+          {task.assigned_to_name
+            ? task.assigned_to_name
+            : <span className="text-orange-500">Unassigned</span>}
+        </p>
       </div>
       <PriorityBadge priority={task.priority} />
       <StatusBadge status={task.status} />

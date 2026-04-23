@@ -21,7 +21,7 @@ export default function TasksPanel({ tasks, employees }) {
   return (
     <div className="flex flex-col h-full">
       <div className="flex items-center justify-between mb-3">
-        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Today's Tasks</h2>
+        <h2 className="text-sm font-semibold uppercase tracking-wide text-muted-foreground">Today's Deliveries</h2>
         <Button size="sm" className="h-7 text-xs gap-1" onClick={() => setCreateOpen(true)}>
           <Plus className="w-3 h-3" /> Create
         </Button>
@@ -30,7 +30,7 @@ export default function TasksPanel({ tasks, employees }) {
       <div className="flex-1 overflow-y-auto space-y-1.5 pr-1">
         {todayTasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-10 text-center text-sm text-muted-foreground">
-            <p>No tasks yet today</p>
+            <p>No deliveries yet today</p>
           </div>
         ) : (
           todayTasks.map(task => (
@@ -41,7 +41,7 @@ export default function TasksPanel({ tasks, employees }) {
               <div className="flex-1 min-w-0">
                 <p className="text-sm font-medium truncate">{task.title}</p>
                 <p className="text-xs text-muted-foreground truncate">
-                  {task.assigned_employee_name || <span className="text-orange-500">Unassigned</span>}
+                  {task.assigned_to_name || <span className="text-orange-500">Unassigned</span>}
                 </p>
               </div>
               <PriorityBadge priority={task.priority} />

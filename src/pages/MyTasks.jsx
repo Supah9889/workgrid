@@ -122,19 +122,47 @@ function DeliveryCard({ task, onUpdated }) {
             </div>
           )}
 
-          {advance && (
-            <div
-              onClick={handleAdvance}
-              className={`mt-1 w-full text-center py-2.5 rounded-lg font-medium text-sm transition-all flex items-center justify-center gap-2 ${
-                saving
-                  ? 'bg-slate-700 text-slate-500 cursor-not-allowed'
-                  : 'bg-blue-600 hover:bg-blue-500 active:scale-[0.98] text-white cursor-pointer'
-              }`}
-            >
-              {saving && <Loader2 className="w-4 h-4 animate-spin" />}
-              {advance.label}
-            </div>
-          )}
+          {(() => {
+            const steps = [
+              { key: 'pending', label: 'Assigned' },
+              { key: 'picked_up', label: 'Picked Up' },
+              { key: 'en_route', label: 'En Route' },
+              { key: 'delivered', label: 'Delivered' },
+            ];
+            const currentIndex = steps.findIndex(s => s.key === task.status);
+            const nextStep = steps[currentIndex + 1];
+            return (
+              <div className="mt-2 mb-2">
+                <div className="flex items-center gap-1 mb-2">
+                  {steps.map((step, i) => (
+                    <div key={step.key} className="flex flex-col items-center flex-1">
+                      <div className={`h-1.5 w-full rounded-full transition-colors ${
+                        i < currentIndex ? 'bg-green-500' :
+                        i === currentIndex ? 'bg-blue-500' :
+                        'bg-slate-700'
+                      }`} />
+                      <span className={`text-[9px] mt-0.5 ${
+                        i === currentIndex ? 'text-blue-400' :
+                        i < currentIndex ? 'text-green-400' :
+                        'text-slate-600'
+                      }`}>{step.label}</span>
+                    </div>
+                  ))}
+                </div>
+                {nextStep && (
+                  <button
+                    onClick={async () => {
+                      await base44.entities.Task.update(task.id, { status: nextStep.key });
+                      onUpdated();
+                    }}
+                    className="w-full py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors"
+                  >
+                    Mark as {nextStep.label}
+                  </button>
+                )}
+              </div>
+            );
+          })()}
         </div>
       )}
     </div>

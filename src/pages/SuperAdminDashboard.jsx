@@ -34,6 +34,35 @@ function TaskCard({ task, employees }) {
             <StatusBadge status={task.status} />
           </div>
           <p className="font-semibold text-white leading-snug">{task.title}</p>
+          {(() => {
+            const steps = [
+              { key: 'pending', label: 'Assigned' },
+              { key: 'picked_up', label: 'Picked Up' },
+              { key: 'en_route', label: 'En Route' },
+              { key: 'delivered', label: 'Delivered' },
+            ];
+            const currentIndex = steps.findIndex(s => s.key === task.status);
+            return (
+              <div className="flex items-center gap-1 mt-2 mb-1">
+                {steps.map((step, i) => (
+                  <div key={step.key} className="flex items-center gap-1 flex-1">
+                    <div className="flex flex-col items-center flex-1">
+                      <div className={`h-1.5 w-full rounded-full transition-colors ${
+                        i < currentIndex ? 'bg-green-500' :
+                        i === currentIndex ? 'bg-blue-500' :
+                        'bg-slate-700'
+                      }`} />
+                      <span className={`text-[9px] mt-0.5 ${
+                        i === currentIndex ? 'text-blue-400' :
+                        i < currentIndex ? 'text-green-400' :
+                        'text-slate-600'
+                      }`}>{step.label}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            );
+          })()}
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-xs text-slate-400">
             <span className="flex items-center gap-1 truncate">
               <User className="w-3 h-3 flex-shrink-0" />

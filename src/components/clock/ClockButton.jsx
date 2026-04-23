@@ -21,10 +21,11 @@ function distanceMiles(lat1, lng1, lat2, lng2) {
 function capturePosition() {
   return new Promise(resolve => {
     if (!navigator.geolocation) { resolve(null); return; }
+    const timer = setTimeout(() => resolve(null), 5000);
     navigator.geolocation.getCurrentPosition(
-      pos => resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }),
-      () => resolve(null),
-      { timeout: 10000, maximumAge: 0 }
+      pos => { clearTimeout(timer); resolve({ lat: pos.coords.latitude, lng: pos.coords.longitude }); },
+      () => { clearTimeout(timer); resolve(null); },
+      { timeout: 5000, maximumAge: 60000 }
     );
   });
 }
@@ -144,32 +145,34 @@ export default function ClockButton({ user }) {
 
   const executePunchIn = async () => {
     const today = new Date().toISOString().split('T')[0];
-    const pos = await capturePosition();
+    let pos = null;
+    try { pos = await capturePosition(); } catch(e) { console.warn('GPS failed', e); }
     const geo = checkGeofence(pos?.lat, pos?.lng);
-
-    const record = await base44.entities.ClockRecord.create({
-      employee_email: user.email,
-      employee_name: user.full_name || user.email,
-      date: today,
-      punch_in_time: new Date().toISOString(),
-      punch_in_lat: pos?.lat ?? null,
-      punch_in_lng: pos?.lng ?? null,
-      punch_in_in_bounds: geo.in_bounds,
-      flagged: !geo.in_bounds,
-    });
-
-    setClockRecord(record);
-    startLocationTracking(record.id);
-
-    await notifyClockIn(user);
-    if (!geo.in_bounds) await notifyOutOfBoundsPunch(user, 'in', geo.distance);
-
-    await logActivity(
-      'employee_clocked_in',
-      `${user.full_name || user.email} punched in${!geo.in_bounds ? ' ⚠️ OUT OF BOUNDS' : ''}`,
-      user.email, user.full_name, { entity_id: record.id, entity_type: 'ClockRecord' }
-    );
-    toast({ title: geo.in_bounds ? 'Punched in!' : 'Punched in — outside geofence area' });
+    try {
+      const record = await base44.entities.ClockRecord.create({
+        employee_email: user.email,
+        employee_name: user.full_name || user.email,
+        date: today,
+        punch_in_time: new Date().toISOString(),
+        punch_in_lat: pos?.lat ?? null,
+        punch_in_lng: pos?.lng ?? null,
+        punch_in_in_bounds: geo.in_bounds,
+        flagged: !geo.in_bounds,
+      });
+      setClockRecord(record);
+      startLocationTracking(record.id);
+      await notifyClockIn(user);
+      if (!geo.in_bounds) await notifyOutOfBoundsPunch(user, 'in', geo.distance);
+      await logActivity(
+        'employee_clocked_in',
+        `${user.full_name || user.email} punched in${!geo.in_bounds ? ' ⚠️ OUT OF BOUNDS' : ''}`,
+        user.email, user.full_name, { entity_id: record.id, entity_type: 'ClockRecord' }
+      );
+      toast({ title: geo.in_bounds ? 'Punched in!' : 'Punched in — outside geofence area' });
+    } catch(e) {
+      console.error('ClockRecord create failed:', e);
+      throw e;
+    }
   };
 
   const executeLunchStart = async () => {

@@ -17,6 +17,7 @@ import {
   FileText,
   Radio,
   BookUser,
+  Lock,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -32,6 +33,7 @@ const SUPER_ADMIN_NAV = [
   { path: '/contact-directory',     label: 'Contacts',         icon: BookUser },
   { path: '/geofence-settings',     label: 'Geofence',         icon: Radio },
   { path: '/permissions',           label: 'Permissions',      icon: Shield },
+  { path: '/security-dashboard',   label: 'Security',         icon: Lock },
 ];
 
 const OPERATOR_NAV = [

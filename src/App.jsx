@@ -24,6 +24,7 @@ import Onboarding from '@/pages/Onboarding';
 import AuditLog from '@/pages/AuditLog';
 import GeofenceSettings from '@/pages/GeofenceSettings';
 import ContactDirectory from '@/pages/ContactDirectory';
+import SecurityDashboard from '@/pages/SecurityDashboard';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, needsOnboarding } = useAuth();
@@ -111,6 +112,11 @@ const AuthenticatedApp = () => {
             </RoleGuard>
           } />
           <Route path="/contact-directory" element={<ContactDirectory />} />
+          <Route path="/security-dashboard" element={
+            <RoleGuard allowedRoles={['super_admin', 'owner']}>
+              <SecurityDashboard />
+            </RoleGuard>
+          } />
         </Route>
         <Route path="*" element={<PageNotFound />} />
       </Routes>

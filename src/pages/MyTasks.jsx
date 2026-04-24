@@ -85,10 +85,16 @@ function DeliveryCard({ task, onUpdated, updateTaskStatus }) {
     e.stopPropagation();
     if (!advance || saving) return;
     setSaving(true);
-    await updateTaskStatus(task.id, { status: advance.next });
-    toast({ title: `Status updated to ${STATUS_SECTION[advance.next]?.label}` });
-    onUpdated();
-    setSaving(false);
+    try {
+      await updateTaskStatus(task.id, { status: advance.next });
+      toast({ title: `Status updated to ${STATUS_SECTION[advance.next]?.label}` });
+      onUpdated();
+    } catch (err) {
+      console.error('[MyTasks] Status advance failed:', err);
+      toast({ title: 'Failed to update status', description: err.message || 'Please try again.', variant: 'destructive' });
+    } finally {
+      setSaving(false);
+    }
   };
 
   return (

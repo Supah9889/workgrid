@@ -39,7 +39,8 @@ export default function LiveStatusList({ employees, clockedInRecords, onManualCl
       toast({ title: 'Closed clock record for ' + record.employee_name });
       onManualClose?.();
     } catch (err) {
-      toast({ title: 'Something went wrong', description: err.message, variant: 'destructive' });
+      console.error('[LiveStatusList] Manual close failed:', err);
+      toast({ title: 'Failed to close clock record', description: err.message || 'Please try again.', variant: 'destructive' });
     }
   };
 

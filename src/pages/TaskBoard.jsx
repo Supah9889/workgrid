@@ -5,6 +5,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Search, List, Map } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 import { format } from 'date-fns';
 import TaskRow from '@/components/tasks/TaskRow';
 import CreateTaskDialog from '@/components/tasks/CreateTaskDialog';
@@ -23,11 +24,19 @@ export default function TaskBoard() {
 
   const isSuperAdmin = user?.role === 'super_admin' || user?.role === 'owner';
 
+  const { toast } = useToast();
+
   const handleDelete = async () => {
     if (!deleteTask) return;
-    await base44.entities.Task.delete(deleteTask.id);
-    setDeleteTask(null);
-    queryClient.invalidateQueries({ queryKey: ['tasks-today'] });
+    try {
+      await base44.entities.Task.delete(deleteTask.id);
+      setDeleteTask(null);
+      queryClient.invalidateQueries({ queryKey: ['tasks-today'] });
+    } catch (err) {
+      console.error('[TaskBoard] Delete failed:', err);
+      toast({ title: 'Failed to delete task', description: err.message || 'Please try again.', variant: 'destructive' });
+      setDeleteTask(null);
+    }
   };
 
   const today = new Date();

@@ -4,11 +4,12 @@ import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Plus, Search } from 'lucide-react';
+import { Plus, Search, List, Map } from 'lucide-react';
 import { format } from 'date-fns';
 import TaskRow from '@/components/tasks/TaskRow';
 import CreateTaskDialog from '@/components/tasks/CreateTaskDialog';
 import EditTaskDialog from '@/components/tasks/EditTaskDialog';
+import DeliveryMap from '@/components/tasks/DeliveryMap';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 export default function TaskBoard() {
@@ -18,6 +19,7 @@ export default function TaskBoard() {
   const [createOpen, setCreateOpen] = useState(false);
   const [editTask, setEditTask] = useState(null);
   const [deleteTask, setDeleteTask] = useState(null);
+  const [view, setView] = useState('list');
 
   const isSuperAdmin = user?.role === 'super_admin' || user?.role === 'owner';
 
@@ -77,10 +79,27 @@ export default function TaskBoard() {
           <h1 className="text-2xl font-bold tracking-tight">Master Task Board</h1>
           <p className="text-muted-foreground text-sm mt-0.5">{format(today, 'EEEE, MMMM d, yyyy')}</p>
         </div>
-        <Button onClick={() => setCreateOpen(true)} className="gap-2">
-          <Plus className="w-4 h-4" />
-          Create Task
-        </Button>
+        <div className="flex items-center gap-2">
+          {/* View toggle */}
+          <div className="flex items-center border border-border rounded-md overflow-hidden">
+            <button
+              onClick={() => setView('list')}
+              className={`px-3 py-1.5 text-sm font-medium flex items-center gap-1.5 transition-colors ${view === 'list' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+            >
+              <List className="w-4 h-4" /> List
+            </button>
+            <button
+              onClick={() => setView('map')}
+              className={`px-3 py-1.5 text-sm font-medium flex items-center gap-1.5 transition-colors ${view === 'map' ? 'bg-primary text-primary-foreground' : 'text-muted-foreground hover:bg-muted'}`}
+            >
+              <Map className="w-4 h-4" /> Map
+            </button>
+          </div>
+          <Button onClick={() => setCreateOpen(true)} className="gap-2">
+            <Plus className="w-4 h-4" />
+            Create Task
+          </Button>
+        </div>
       </div>
 
       <div className="relative mb-4">
@@ -93,7 +112,13 @@ export default function TaskBoard() {
         />
       </div>
 
-      <div className="space-y-2">
+      {view === 'map' && (
+        <div className="mb-6">
+          <DeliveryMap tasks={allTasks} />
+        </div>
+      )}
+
+      <div className="space-y-2" style={{ display: view === 'map' ? 'none' : undefined }}>
         {isError ? (
           <div className="flex flex-col items-center justify-center h-64 gap-3">
             <p className="text-destructive font-medium">Failed to load data</p>

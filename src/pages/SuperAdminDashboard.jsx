@@ -9,8 +9,8 @@ import { format } from 'date-fns';
 
 function TaskCard({ task, employees }) {
   const [expanded, setExpanded] = useState(false);
-  const isUnassigned = !task.assigned_to;
-  const empName = task.assigned_to_name || (employees.find(e => e.email === task.assigned_to)?.full_name) || 'Unassigned';
+  const isUnassigned = !task.assigned_employee;
+  const empName = task.assigned_employee_name || (employees.find(e => e.email === task.assigned_employee)?.full_name) || 'Unassigned';
 
   return (
     <div
@@ -173,15 +173,15 @@ export default function SuperAdminDashboard() {
     return unsub;
   }, [queryClient]);
 
-  const unassigned = allTasks.filter(t => !t.assigned_to);
-  const assigned = allTasks.filter(t => !!t.assigned_to);
+  const unassigned = allTasks.filter(t => !t.assigned_employee);
+  const assigned = allTasks.filter(t => !!t.assigned_employee);
 
   const todayStr = new Date().toISOString().split('T')[0];
   const clockedInToday = clockRecords.filter(r => r.date === todayStr && r.punch_in_time && !r.punch_out_time).length;
   const activeDeliveries = allTasks.filter(t => t.status === 'picked_up' || t.status === 'en_route').length;
   const deliveredToday = allTasks.filter(t => t.status === 'delivered' && (t.updated_date?.startsWith(todayStr) || t.created_date?.startsWith(todayStr))).length;
   const oobAlerts = clockRecords.filter(r => r.date === todayStr && r.flagged).length;
-  const unassignedTasks = allTasks.filter(t => !t.assigned_to).length;
+  const unassignedTasks = allTasks.filter(t => !t.assigned_employee).length;
 
   return (
     <div className="min-h-screen bg-[#0f172a]">

@@ -10,82 +10,91 @@
       "type": "string",
       "description": "Name of the employee"
     },
+    "clock_in": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Clock in timestamp"
+    },
+    "clock_out": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Clock out timestamp"
+    },
     "date": {
       "type": "string",
       "format": "date",
       "description": "Date of the clock record (YYYY-MM-DD)"
     },
-    "punch_in_time": {
-      "type": "string",
-      "format": "date-time",
-      "description": "Timestamp when employee punched in"
-    },
-    "punch_in_lat": {
-      "type": "number",
-      "description": "Latitude at punch in"
-    },
-    "punch_in_lng": {
-      "type": "number",
-      "description": "Longitude at punch in"
-    },
-    "punch_in_in_bounds": {
-      "type": "boolean",
-      "description": "Whether punch in was within geofence radius"
-    },
-    "lunch_start": {
-      "type": "string",
-      "format": "date-time",
-      "description": "Timestamp when lunch started"
-    },
-    "lunch_end": {
-      "type": "string",
-      "format": "date-time",
-      "description": "Timestamp when lunch ended"
-    },
-    "punch_out_time": {
-      "type": "string",
-      "format": "date-time",
-      "description": "Timestamp when employee punched out"
-    },
-    "punch_out_lat": {
-      "type": "number",
-      "description": "Latitude at punch out"
-    },
-    "punch_out_lng": {
-      "type": "number",
-      "description": "Longitude at punch out"
-    },
-    "punch_out_in_bounds": {
-      "type": "boolean",
-      "description": "Whether punch out was within geofence radius"
-    },
     "total_hours": {
       "type": "number",
-      "description": "Total hours worked (lunch deducted), calculated on punch out"
-    },
-    "total_lunch_minutes": {
-      "type": "number",
-      "description": "Total lunch duration in minutes"
-    },
-    "flagged": {
-      "type": "boolean",
-      "default": false,
-      "description": "True if any punch was out of geofence bounds"
+      "description": "Total hours worked (calculated on clock out)"
     },
     "open_flag": {
       "type": "boolean",
       "default": false,
-      "description": "Flagged if employee never punched out at end of day"
+      "description": "Flagged if clocked in with no clock out at end of day"
     },
     "manually_closed": {
       "type": "boolean",
       "default": false,
       "description": "Admin manually closed this record"
+    },
+    "punch_in_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "punch_out_time": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "punch_in_lat": {
+      "type": "number"
+    },
+    "punch_in_lng": {
+      "type": "number"
+    },
+    "punch_in_in_bounds": {
+      "type": "boolean"
+    },
+    "punch_out_lat": {
+      "type": "number"
+    },
+    "punch_out_lng": {
+      "type": "number"
+    },
+    "punch_out_in_bounds": {
+      "type": "boolean"
+    },
+    "flagged": {
+      "type": "boolean",
+      "default": false
+    },
+    "lunch_start": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "lunch_end": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "total_lunch_minutes": {
+      "type": "number"
+    },
+    "lunch_start_lat": {
+      "type": "number"
+    },
+    "lunch_start_lng": {
+      "type": "number"
+    },
+    "lunch_end_lat": {
+      "type": "number"
+    },
+    "lunch_end_lng": {
+      "type": "number"
     }
   },
   "required": [
     "employee_email",
-    "punch_in_time",
     "date"
   ]
 }

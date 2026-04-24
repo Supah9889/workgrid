@@ -38,6 +38,16 @@ export default function SecurityDashboard() {
   const flagged = clockRecords.filter(r => r.flagged);
   const filtered = flagged.filter(r => r.date >= dateFrom && r.date <= dateTo);
 
+  const [expectedHash, setExpectedHash] = useState(user?.pin_hash);
+
+  useEffect(() => {
+    if (!unlocked && user?.email) {
+      base44.entities.User.filter({ email: user.email }).then(users => {
+        if (users?.[0]) setExpectedHash(users[0].pin_hash);
+      });
+    }
+  }, [unlocked, user?.email]);
+
   const handlePinSuccess = () => {
     setUnlocked(true);
   };
@@ -54,7 +64,7 @@ export default function SecurityDashboard() {
         </div>
         <PinModal
           title="Security PIN Required"
-          expectedHash={user?.pin_hash}
+          expectedHash={expectedHash}
           onSuccess={handlePinSuccess}
           onCancel={() => window.history.back()}
         />

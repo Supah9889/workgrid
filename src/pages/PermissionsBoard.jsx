@@ -31,21 +31,7 @@ const PERMISSION_MATRIX = [
   { key: 'view_activity_feed',       label: 'View Activity Feed',              icon: Activity,      allowedRoles: ['operator'] },
 ];
 
-// Default permissions per role (used when no user-level record exists)
-const ROLE_DEFAULTS = {
-  operator: {
-    view_all_tasks: true, create_tasks: true, reassign_tasks: false,
-    view_employee_locations: false, view_own_location: false,
-    view_clock_records: false, view_own_clock_records: false,
-    access_notifications: true, add_notes_to_tasks: true, view_activity_feed: false,
-  },
-  employee: {
-    view_all_tasks: false, create_tasks: false, reassign_tasks: false,
-    view_employee_locations: false, view_own_location: true,
-    view_clock_records: false, view_own_clock_records: true,
-    access_notifications: true, add_notes_to_tasks: true, view_activity_feed: false,
-  },
-};
+import { DEFAULT_PERMISSIONS as ROLE_DEFAULTS } from '@/lib/permissions.jsx';
 
 export default function PermissionsBoard() {
   const { toast } = useToast();

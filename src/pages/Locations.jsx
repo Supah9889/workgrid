@@ -21,7 +21,7 @@ export default function Locations() {
     queryKey: ['clocked-in-today'],
     queryFn: () => base44.entities.ClockRecord.filter({ date: today }),
     refetchInterval: 30000,
-    select: data => data.filter(r => !r.clock_out),
+    select: data => data.filter(r => !r.punch_out_time),
   });
 
   const { data: todayTasks = [] } = useQuery({

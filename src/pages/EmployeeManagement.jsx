@@ -51,7 +51,7 @@ export default function EmployeeManagement() {
 
       const tasks = await base44.entities.Task.filter({ assigned_employee: targetUser.email });
       for (const task of tasks) {
-        if (task.status !== 'complete') {
+        if (task.status !== 'delivered') {
           await base44.entities.Task.update(task.id, {
             assigned_employee: '',
             assigned_employee_name: '',
@@ -64,7 +64,7 @@ export default function EmployeeManagement() {
         await base44.entities.Notification.create({
           recipient_email: admin.email,
           title: 'Employee Deactivated',
-          message: `${targetUser.full_name || targetUser.email} was deactivated. Their ${tasks.filter(t => t.status !== 'complete').length} active task(s) have been unassigned.`,
+          message: `${targetUser.full_name || targetUser.email} was deactivated. Their ${tasks.filter(t => t.status !== 'delivered').length} active task(s) have been unassigned.`,
           type: 'warning',
         });
       }

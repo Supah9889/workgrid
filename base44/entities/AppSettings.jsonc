@@ -4,21 +4,17 @@
   "properties": {
     "geofence_enabled": {
       "type": "boolean",
-      "default": false,
-      "description": "Whether geofencing is active for clock punches"
+      "default": false
     },
     "geofence_lat": {
-      "type": "number",
-      "description": "Latitude of the geofence center (business location)"
+      "type": "number"
     },
     "geofence_lng": {
-      "type": "number",
-      "description": "Longitude of the geofence center"
+      "type": "number"
     },
     "geofence_radius": {
       "type": "number",
-      "default": 0.5,
-      "description": "Acceptable radius in miles from the geofence center"
+      "default": 0.5
     }
   },
   "required": []

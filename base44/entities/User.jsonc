@@ -5,25 +5,33 @@
     "role": {
       "type": "string",
       "enum": [
-        "owner",
         "super_admin",
         "operator",
-        "employee"
+        "employee",
+        "owner"
       ],
       "default": "employee"
     },
-    "contact_phone": {
+    "status": {
       "type": "string",
-      "description": "Employee phone number"
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active"
     },
     "pin_hash": {
-      "type": "string",
-      "description": "SHA-256 hash of the employee's 4-digit PIN"
+      "type": "string"
     },
     "has_onboarded": {
       "type": "boolean",
-      "default": false,
-      "description": "Whether the user has completed onboarding"
+      "default": false
+    },
+    "contact_phone": {
+      "type": "string"
+    },
+    "contact_email": {
+      "type": "string"
     }
   }
 }

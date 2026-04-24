@@ -3,7 +3,7 @@ import { base44 } from '@/api/base44Client';
 
 const PermissionsContext = createContext(null);
 
-const DEFAULT_PERMISSIONS = {
+export const DEFAULT_PERMISSIONS = {
   operator: {
     view_all_tasks: true,
     create_tasks: true,
@@ -134,7 +134,7 @@ export function usePermissions() {
  * Check if a user has a specific permission.
  * Checks user-level overrides first, then falls back to role-level permissions.
  */
-export function hasPermission(permissions, userRole, permissionKey, userEmail, userPermissionsMap) {
+export function hasPermission(permissions, userRole, permissionKey, userEmail, userPermissionsMap, permissionsByRole) {
   if (userRole === 'super_admin' || userRole === 'owner') return true;
 
   // Check user-level override first
@@ -143,6 +143,13 @@ export function hasPermission(permissions, userRole, permissionKey, userEmail, u
   }
 
   // Fall back to role-level permission
+  if (permissionsByRole && permissionsByRole[userRole]) {
+    return !!permissionsByRole[userRole][permissionKey];
+  }
+  if (DEFAULT_PERMISSIONS[userRole]) {
+    return !!DEFAULT_PERMISSIONS[userRole][permissionKey];
+  }
+
   if (permissions && (userRole === 'operator' || userRole === 'employee')) {
     return !!permissions[permissionKey];
   }

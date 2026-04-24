@@ -47,7 +47,7 @@ function NumPad({ value, onChange }) {
 }
 
 export default function Onboarding() {
-  const { user, checkUserAuth } = useAuth();
+  const { user, completeOnboarding } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [fullName, setFullName] = useState(user?.full_name || '');
@@ -80,17 +80,24 @@ export default function Onboarding() {
     setSaving(true);
     try {
       const pinHash = await hashPin(pin);
+      const trimmedName = fullName.trim();
+      const trimmedPhone = phone.trim();
+
       await base44.entities.User.update(user.id, {
-        full_name: fullName.trim(),
-        contact_phone: phone.trim(),
+        full_name: trimmedName,
+        contact_phone: trimmedPhone,
         pin_hash: pinHash,
         has_onboarded: true,
       });
+
+      // Immediately mark onboarding complete in context — no re-fetch race condition
+      completeOnboarding({ full_name: trimmedName, contact_phone: trimmedPhone, pin_hash: pinHash });
+
       setStep(4);
-      setTimeout(async () => {
+      setTimeout(() => {
         setVisible(false);
-        await checkUserAuth();
-        setTimeout(() => navigate('/'), 500);
+        // Short delay for fade-out, then navigate
+        setTimeout(() => navigate('/'), 400);
       }, 2000);
     } catch (e) {
       console.error('[Onboarding] Save failed:', e);

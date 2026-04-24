@@ -29,7 +29,7 @@ import PayrollSummary from '@/pages/PayrollSummary';
 import Analytics from '@/pages/Analytics';
 
 const AuthenticatedApp = () => {
-  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, needsOnboarding } = useAuth();
+  const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, needsOnboarding, user } = useAuth();
   const location = useLocation();
 
   if (isLoadingPublicSettings || isLoadingAuth) {
@@ -48,7 +48,8 @@ const AuthenticatedApp = () => {
     if (authError.type === 'auth_required') { navigateToLogin(); return null; }
   }
 
-  if (needsOnboarding && location.pathname !== '/onboarding') {
+  // Only redirect to onboarding if has_onboarded is explicitly false (not just falsy/undefined)
+  if (needsOnboarding && user?.has_onboarded === false && location.pathname !== '/onboarding') {
     return <Navigate to="/onboarding" replace />;
   }
 

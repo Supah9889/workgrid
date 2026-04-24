@@ -100,7 +100,8 @@ export const AuthProvider = ({ children }) => {
       const mergedUser = { ...authUser, ...userEntity };
       setUser(mergedUser);
       setIsAuthenticated(true);
-      setNeedsOnboarding(!mergedUser.has_onboarded);
+      // Only flag onboarding if has_onboarded is explicitly false
+      setNeedsOnboarding(mergedUser.has_onboarded === false);
       setIsLoadingAuth(false);
       setAuthChecked(true);
     } catch (error) {
@@ -113,6 +114,12 @@ export const AuthProvider = ({ children }) => {
         setAuthError({ type: 'auth_required', message: 'Authentication required' });
       }
     }
+  };
+
+  // Called immediately after onboarding save succeeds — avoids re-fetch race condition
+  const completeOnboarding = (updatedUserFields = {}) => {
+    setNeedsOnboarding(false);
+    setUser(prev => prev ? { ...prev, has_onboarded: true, ...updatedUserFields } : prev);
   };
 
   const logout = (shouldRedirect = true) => {
@@ -144,7 +151,8 @@ export const AuthProvider = ({ children }) => {
       logout,
       navigateToLogin,
       checkUserAuth,
-      checkAppState
+      checkAppState,
+      completeOnboarding,
     }}>
       {children}
     </AuthContext.Provider>

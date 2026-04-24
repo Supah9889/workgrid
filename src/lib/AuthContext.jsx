@@ -144,6 +144,8 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = (shouldRedirect = true) => {
+    sessionStorage.removeItem('pin_verified');
+    sessionStorage.removeItem('onboarding_complete');
     setUser(null);
     setIsAuthenticated(false);
     setNeedsOnboarding(false);

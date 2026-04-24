@@ -90,6 +90,7 @@ export default function Onboarding() {
         has_onboarded: true,
       });
       sessionStorage.setItem('onboarding_complete', 'true');
+      sessionStorage.setItem('pin_verified', 'true');
       completeOnboarding({ full_name: trimmedName, contact_phone: trimmedPhone, pin_hash: pinHash });
       setStep(4);
       setTimeout(() => {

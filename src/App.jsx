@@ -21,6 +21,7 @@ import ClockRecords from '@/pages/ClockRecords';
 import EmployeeProfile from '@/pages/EmployeeProfile';
 import EmployeeRepository from '@/pages/EmployeeRepository';
 import Onboarding from '@/pages/Onboarding';
+import PinLogin from '@/pages/PinLogin';
 import AuditLog from '@/pages/AuditLog';
 import GeofenceSettings from '@/pages/GeofenceSettings';
 import ContactDirectory from '@/pages/ContactDirectory';
@@ -55,10 +56,16 @@ const AuthenticatedApp = () => {
     return <Navigate to="/onboarding" replace />;
   }
 
+  const pinVerified = sessionStorage.getItem('pin_verified') === 'true';
+  if (!needsOnboarding && !pinVerified && user?.pin_hash && location.pathname !== '/pin-login') {
+    return <Navigate to="/pin-login" replace />;
+  }
+
   return (
     <PermissionsProvider>
       <Routes>
         <Route path="/onboarding" element={<Onboarding />} />
+        <Route path="/pin-login" element={<PinLogin />} />
         <Route path="/" element={<RoleRouter />} />
         <Route element={<AppLayout />}>
           <Route path="/dashboard" element={

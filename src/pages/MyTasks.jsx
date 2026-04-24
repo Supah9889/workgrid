@@ -1,12 +1,64 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
-import { Loader2, MapPin, Clock, Package, Building2, ChevronDown, ChevronUp, ListTodo } from 'lucide-react';
+import { Loader2, MapPin, Clock, Package, Building2, ChevronDown, ChevronUp, ListTodo, Navigation } from 'lucide-react';
 import { PriorityBadge, StatusBadge } from '@/components/tasks/TaskBadges';
 import { useToast } from '@/components/ui/use-toast';
 import { format } from 'date-fns';
 import ClockButton from '@/components/clock/ClockButton';
+
+// GPS tracking hook — pushes location to task every 30s while en_route
+function useGpsTracking(tasks) {
+  const intervalRef = useRef(null);
+  const watchedTaskIdsRef = useRef(new Set());
+
+  const pushLocation = (taskId) => {
+    if (!navigator.geolocation) return;
+    navigator.geolocation.getCurrentPosition(pos => {
+      base44.entities.Task.update(taskId, {
+        employee_lat: pos.coords.latitude,
+        employee_lng: pos.coords.longitude,
+        employee_location_updated_at: new Date().toISOString(),
+      });
+    }, null, { timeout: 8000, maximumAge: 15000 });
+  };
+
+  useEffect(() => {
+    const enRouteTasks = tasks.filter(t => t.status === 'en_route');
+
+    // Initial push for any newly en_route tasks
+    enRouteTasks.forEach(t => {
+      if (!watchedTaskIdsRef.current.has(t.id)) {
+        watchedTaskIdsRef.current.add(t.id);
+        pushLocation(t.id);
+      }
+    });
+
+    // Clear tasks that are no longer en_route
+    watchedTaskIdsRef.current.forEach(id => {
+      if (!enRouteTasks.find(t => t.id === id)) {
+        watchedTaskIdsRef.current.delete(id);
+        // Clear GPS fields when done
+        base44.entities.Task.update(id, {
+          employee_lat: null,
+          employee_lng: null,
+          employee_location_updated_at: null,
+        });
+      }
+    });
+
+    // Interval: push every 30s for all en_route tasks
+    if (intervalRef.current) clearInterval(intervalRef.current);
+    if (enRouteTasks.length > 0) {
+      intervalRef.current = setInterval(() => {
+        enRouteTasks.forEach(t => pushLocation(t.id));
+      }, 30000);
+    }
+
+    return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
+  }, [tasks.map(t => t.id + t.status).join(',')]);
+}
 
 const STATUS_NEXT = {
   pending:   { label: 'Mark as Picked Up', next: 'picked_up' },
@@ -49,6 +101,11 @@ function DeliveryCard({ task, onUpdated }) {
           <div className="flex items-center gap-2 flex-wrap mb-1.5">
             <PriorityBadge priority={task.priority} />
             <StatusBadge status={task.status} />
+            {task.status === 'en_route' && (
+              <span className="flex items-center gap-1 text-[10px] font-semibold text-blue-400 bg-blue-500/10 px-1.5 py-0.5 rounded-full">
+                <Navigation className="w-2.5 h-2.5" /> GPS Live
+              </span>
+            )}
           </div>
           <p className="font-semibold text-white leading-snug">{task.title}</p>
           <div className="grid grid-cols-2 gap-x-4 gap-y-1 mt-2 text-xs text-slate-400">
@@ -180,6 +237,9 @@ export default function MyTasks() {
     queryFn: () => base44.entities.Task.filter({ assigned_employee: user.email }),
     enabled: !!user?.email,
   });
+
+  // Start GPS tracking whenever a task goes en_route
+  useGpsTracking(tasks);
 
   useEffect(() => {
     if (!user?.email) return;

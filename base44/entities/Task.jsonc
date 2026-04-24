@@ -4,39 +4,21 @@
   "properties": {
     "title": {
       "type": "string",
-      "description": "What the delivery is"
+      "description": "Task title"
     },
-    "part_description": {
+    "description": {
       "type": "string",
-      "description": "Specific part being delivered, e.g. 42in deck belt - Husqvarna YTH24V48"
+      "description": "Task description"
     },
-    "assigned_to": {
+    "priority": {
       "type": "string",
-      "description": "Email of the assigned employee"
-    },
-    "assigned_to_name": {
-      "type": "string",
-      "description": "Display name of the assigned employee"
-    },
-    "delivery_address": {
-      "type": "string",
-      "description": "Full delivery address"
-    },
-    "store_name": {
-      "type": "string",
-      "description": "Store to pick up from, e.g. Lowes, Home Depot"
-    },
-    "requested_by": {
-      "type": "string",
-      "description": "Insurance company or party that requested the delivery"
-    },
-    "scheduled_time": {
-      "type": "string",
-      "description": "When the delivery is scheduled"
-    },
-    "notes": {
-      "type": "string",
-      "description": "Pre-task notes from admin, visible to employee"
+      "enum": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "default": "medium",
+      "description": "Task priority level"
     },
     "status": {
       "type": "string",
@@ -47,17 +29,53 @@
         "delivered"
       ],
       "default": "pending",
-      "description": "Current delivery status"
+      "description": "Current task status"
     },
-    "priority": {
+    "assigned_employee": {
       "type": "string",
-      "enum": [
-        "low",
-        "medium",
-        "high"
-      ],
-      "default": "medium",
-      "description": "Delivery priority level"
+      "description": "Email of the assigned employee"
+    },
+    "assigned_employee_name": {
+      "type": "string",
+      "description": "Name of the assigned employee"
+    },
+    "notes": {
+      "type": "string",
+      "description": "Employee notes visible to admin"
+    },
+    "part_description": {
+      "type": "string",
+      "description": "Description of the part being delivered"
+    },
+    "store_name": {
+      "type": "string",
+      "description": "Store to pick up from"
+    },
+    "requested_by": {
+      "type": "string",
+      "description": "Who requested the delivery"
+    },
+    "delivery_address": {
+      "type": "string",
+      "description": "Delivery destination address"
+    },
+    "scheduled_time": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Scheduled delivery time"
+    },
+    "employee_lat": {
+      "type": "number",
+      "description": "Live GPS latitude of the assigned employee (updated while en_route)"
+    },
+    "employee_lng": {
+      "type": "number",
+      "description": "Live GPS longitude of the assigned employee (updated while en_route)"
+    },
+    "employee_location_updated_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp of last employee GPS update"
     },
     "reassignment_log": {
       "type": "array",
@@ -65,11 +83,21 @@
       "items": {
         "type": "object",
         "properties": {
-          "from_email": { "type": "string" },
-          "from_name": { "type": "string" },
-          "to_email": { "type": "string" },
-          "to_name": { "type": "string" },
-          "reassigned_at": { "type": "string" }
+          "from_email": {
+            "type": "string"
+          },
+          "from_name": {
+            "type": "string"
+          },
+          "to_email": {
+            "type": "string"
+          },
+          "to_name": {
+            "type": "string"
+          },
+          "reassigned_at": {
+            "type": "string"
+          }
         }
       }
     }

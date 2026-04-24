@@ -3,6 +3,20 @@ import { base44 } from '@/api/base44Client';
 
 const PermissionsContext = createContext(null);
 
+// Role-based safety ceiling: a permission CAN only be enabled for a role if listed here.
+// Super admin / owner always get everything regardless.
+export const ROLE_ALLOWED_PERMISSIONS = {
+  operator: [
+    'view_all_tasks', 'create_tasks', 'reassign_tasks',
+    'view_employee_locations', 'view_clock_records',
+    'access_notifications', 'add_notes_to_tasks', 'view_activity_feed',
+  ],
+  employee: [
+    'view_own_location', 'view_own_clock_records',
+    'access_notifications', 'add_notes_to_tasks',
+  ],
+};
+
 export const DEFAULT_PERMISSIONS = {
   operator: {
     view_all_tasks: true,
@@ -30,14 +44,60 @@ export const DEFAULT_PERMISSIONS = {
   },
 };
 
+/**
+ * THE single source of truth for permission checking.
+ *
+ * Priority:
+ *  1. super_admin / owner → always true
+ *  2. User-specific record (from UserPermission entity) if it exists
+ *  3. Role-level record (from RolePermission entity) if it exists
+ *  4. Hard-coded DEFAULT_PERMISSIONS for the role
+ *
+ * A permission is also capped by ROLE_ALLOWED_PERMISSIONS — if the role
+ * structurally cannot hold a permission, it returns false regardless of stored value.
+ */
+export function computeEffectivePermissions(userEmail, userRole, userPermissionsMap, permissionsByRole) {
+  if (userRole === 'super_admin' || userRole === 'owner') {
+    // Full access — return all keys as true
+    const all = {};
+    Object.keys(DEFAULT_PERMISSIONS.operator).forEach(k => { all[k] = true; });
+    return all;
+  }
+
+  // Pick the stored permissions: user-level first, then role-level, then code defaults
+  let base;
+  if (userEmail && userPermissionsMap?.[userEmail]) {
+    base = userPermissionsMap[userEmail];
+  } else if (userRole && permissionsByRole?.[userRole]) {
+    base = permissionsByRole[userRole];
+  } else {
+    base = DEFAULT_PERMISSIONS[userRole] || {};
+  }
+
+  // Apply role ceiling — strip permissions the role can never hold
+  const allowed = ROLE_ALLOWED_PERMISSIONS[userRole] || [];
+  const effective = {};
+  Object.keys(DEFAULT_PERMISSIONS.operator).forEach(key => {
+    effective[key] = allowed.includes(key) ? !!base[key] : false;
+  });
+  return effective;
+}
+
+/**
+ * Simple boolean check — convenience wrapper around computeEffectivePermissions.
+ */
+export function can(userEmail, userRole, permissionKey, userPermissionsMap, permissionsByRole) {
+  if (userRole === 'super_admin' || userRole === 'owner') return true;
+  const effective = computeEffectivePermissions(userEmail, userRole, userPermissionsMap, permissionsByRole);
+  return !!effective[permissionKey];
+}
+
 export function PermissionsProvider({ children }) {
   const [permissionsByRole, setPermissionsByRole] = useState({ operator: null, employee: null });
-  // Per-user permission overrides: { [email]: { ...permFields } }
   const [userPermissions, setUserPermissions] = useState({});
   const [loading, setLoading] = useState(true);
 
   const fetchPermissions = useCallback(async () => {
-    // Load role-level permissions
     const records = await base44.entities.RolePermission.list();
     const result = { operator: null, employee: null };
     for (const role of ['operator', 'employee']) {
@@ -51,7 +111,6 @@ export function PermissionsProvider({ children }) {
     }
     setPermissionsByRole(result);
 
-    // Load all user-level permission overrides
     try {
       const userPerms = await base44.entities.UserPermission.list();
       const map = {};
@@ -74,49 +133,25 @@ export function PermissionsProvider({ children }) {
       }
     });
 
-    // Subscribe to user-level permission changes
     let unsubUser = () => {};
     try {
       unsubUser = base44.entities.UserPermission.subscribe((event) => {
         if (event.type === 'update' || event.type === 'create') {
-          const email = event.data.user_email;
+          const email = event.data?.user_email;
           if (email) setUserPermissions(prev => ({ ...prev, [email]: event.data }));
         }
-        if (event.type === 'delete') {
-          fetchPermissions(); // re-fetch to clear deleted record
-        }
+        if (event.type === 'delete') fetchPermissions();
       });
-    } catch { /* ignore if entity doesn't exist */ }
+    } catch { /* ignore */ }
 
     return () => { unsubRole(); unsubUser(); };
   }, [fetchPermissions]);
 
-  // Legacy: expose operator permissions as `permissions` for backward compat
-  const permissions = permissionsByRole.operator;
-
-  const updatePermission = async (role, key, value) => {
-    const record = permissionsByRole[role];
-    if (!record) return;
-    await base44.entities.RolePermission.update(record.id, { [key]: value });
-  };
-
-  // Get effective permissions for a specific user (user-level override OR role default)
-  const getPermissionsForUser = (userEmail, userRole) => {
-    if (userPermissions[userEmail]) return userPermissions[userEmail];
-    if (userRole === 'operator' || userRole === 'employee') {
-      return permissionsByRole[userRole] || DEFAULT_PERMISSIONS[userRole];
-    }
-    return DEFAULT_PERMISSIONS.employee;
-  };
-
   return (
     <PermissionsContext.Provider value={{
-      permissions,
       permissionsByRole,
       userPermissions,
       loading,
-      updatePermission,
-      getPermissionsForUser,
       refetch: fetchPermissions,
     }}>
       {children}
@@ -131,27 +166,13 @@ export function usePermissions() {
 }
 
 /**
- * Check if a user has a specific permission.
- * Checks user-level overrides first, then falls back to role-level permissions.
+ * Hook: returns a `can(permissionKey)` function for the currently logged-in user.
+ * Usage: const { can } = useUserPermissions(user);
  */
-export function hasPermission(permissions, userRole, permissionKey, userEmail, userPermissionsMap, permissionsByRole) {
-  if (userRole === 'super_admin' || userRole === 'owner') return true;
-
-  // Check user-level override first
-  if (userEmail && userPermissionsMap && userPermissionsMap[userEmail]) {
-    return !!userPermissionsMap[userEmail][permissionKey];
-  }
-
-  // Fall back to role-level permission
-  if (permissionsByRole && permissionsByRole[userRole]) {
-    return !!permissionsByRole[userRole][permissionKey];
-  }
-  if (DEFAULT_PERMISSIONS[userRole]) {
-    return !!DEFAULT_PERMISSIONS[userRole][permissionKey];
-  }
-
-  if (permissions && (userRole === 'operator' || userRole === 'employee')) {
-    return !!permissions[permissionKey];
-  }
-  return false;
+export function useUserCan(user) {
+  const { permissionsByRole, userPermissions } = usePermissions();
+  return useCallback(
+    (permissionKey) => can(user?.email, user?.role, permissionKey, userPermissions, permissionsByRole),
+    [user?.email, user?.role, userPermissions, permissionsByRole]
+  );
 }

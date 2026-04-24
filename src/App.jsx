@@ -74,7 +74,7 @@ const AuthenticatedApp = () => {
             </RoleGuard>
           } />
           <Route path="/tasks" element={
-            <RoleGuard allowedRoles={['super_admin', 'operator', 'owner']}>
+            <RoleGuard allowedRoles={['super_admin', 'operator', 'owner']} permission="view_all_tasks">
               <TaskBoard />
             </RoleGuard>
           } />
@@ -84,12 +84,12 @@ const AuthenticatedApp = () => {
             </RoleGuard>
           } />
           <Route path="/locations" element={
-            <RoleGuard allowedRoles={['super_admin', 'operator', 'owner']}>
+            <RoleGuard allowedRoles={['super_admin', 'operator', 'owner']} permission="view_employee_locations">
               <Locations />
             </RoleGuard>
           } />
           <Route path="/clock-records" element={
-            <RoleGuard allowedRoles={['super_admin', 'operator', 'owner']}>
+            <RoleGuard allowedRoles={['super_admin', 'operator', 'owner']} permission="view_clock_records">
               <ClockRecords />
             </RoleGuard>
           } />
@@ -104,7 +104,7 @@ const AuthenticatedApp = () => {
             </RoleGuard>
           } />
           <Route path="/audit-log" element={
-            <RoleGuard allowedRoles={['super_admin', 'operator', 'owner']}>
+            <RoleGuard allowedRoles={['super_admin', 'operator', 'owner']} permission="view_clock_records">
               <AuditLog />
             </RoleGuard>
           } />

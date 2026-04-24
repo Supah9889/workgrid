@@ -17,21 +17,26 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog';
 
-// For each permission: which roles are ALLOWED to toggle it (others get locked_off)
+// Derive which roles can toggle each permission from the single source of truth
 const PERMISSION_MATRIX = [
-  { key: 'view_all_tasks',           label: 'View Master Task Board',          icon: Eye,           allowedRoles: ['operator'] },
-  { key: 'create_tasks',             label: 'Create Tasks',                    icon: PlusCircle,    allowedRoles: ['operator'] },
-  { key: 'reassign_tasks',           label: 'Reassign Tasks',                  icon: ArrowRightLeft, allowedRoles: ['operator'] },
-  { key: 'view_employee_locations',  label: 'View All Employee Locations',     icon: MapPin,        allowedRoles: ['operator'] },
-  { key: 'view_own_location',        label: 'View Own Location Indicator',     icon: MapPin,        allowedRoles: ['employee'] },
-  { key: 'view_clock_records',       label: 'View Time & Attendance Panel',    icon: Clock,         allowedRoles: ['operator'] },
-  { key: 'view_own_clock_records',   label: 'View Own Clock Records',          icon: Clock,         allowedRoles: ['employee'] },
-  { key: 'access_notifications',     label: 'Access Notification Center',      icon: Bell,          allowedRoles: ['operator', 'employee'] },
-  { key: 'add_notes_to_tasks',       label: 'Add Notes to Tasks',              icon: FileText,      allowedRoles: ['operator', 'employee'] },
-  { key: 'view_activity_feed',       label: 'View Activity Feed',              icon: Activity,      allowedRoles: ['operator'] },
-];
+  { key: 'view_all_tasks',           label: 'View Master Task Board',       icon: Eye           },
+  { key: 'create_tasks',             label: 'Create Tasks',                 icon: PlusCircle    },
+  { key: 'reassign_tasks',           label: 'Reassign Tasks',               icon: ArrowRightLeft },
+  { key: 'view_employee_locations',  label: 'View All Employee Locations',  icon: MapPin        },
+  { key: 'view_own_location',        label: 'View Own Location Indicator',  icon: MapPin        },
+  { key: 'view_clock_records',       label: 'View Time & Attendance Panel', icon: Clock         },
+  { key: 'view_own_clock_records',   label: 'View Own Clock Records',       icon: Clock         },
+  { key: 'access_notifications',     label: 'Access Notification Center',   icon: Bell          },
+  { key: 'add_notes_to_tasks',       label: 'Add Notes to Tasks',           icon: FileText      },
+  { key: 'view_activity_feed',       label: 'View Activity Feed',           icon: Activity      },
+].map(p => ({
+  ...p,
+  allowedRoles: Object.entries(ROLE_ALLOWED_PERMISSIONS)
+    .filter(([, perms]) => perms.includes(p.key))
+    .map(([role]) => role),
+}));
 
-import { DEFAULT_PERMISSIONS as ROLE_DEFAULTS } from '@/lib/permissions.jsx';
+import { DEFAULT_PERMISSIONS as ROLE_DEFAULTS, ROLE_ALLOWED_PERMISSIONS } from '@/lib/permissions.jsx';
 
 export default function PermissionsBoard() {
   const { toast } = useToast();

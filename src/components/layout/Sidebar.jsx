@@ -1,76 +1,60 @@
+import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
-import { usePermissions, hasPermission } from '@/lib/permissions.jsx';
+import { useUserCan } from '@/lib/permissions.jsx';
 import { base44 } from '@/api/base44Client';
-import {
-  LayoutDashboard,
-  ClipboardList,
-  Users,
-  Shield,
-  MapPin,
-  Clock,
-  ListTodo,
-  LogOut,
-  ChevronLeft,
-  ChevronRight,
-  Hexagon,
-  FileText,
-  Radio,
-  BookUser,
-  Lock,
-  DollarSign,
-  BarChart2,
-} from 'lucide-react';
-import { useState } from 'react';
 import { cn } from '@/lib/utils';
+import {
+  LayoutDashboard, ClipboardList, Users, Shield, MapPin, Clock,
+  ListTodo, LogOut, ChevronLeft, ChevronRight, Hexagon, FileText,
+  Radio, BookUser, Lock, DollarSign, BarChart2,
+} from 'lucide-react';
 
 const SUPER_ADMIN_NAV = [
-  { path: '/dashboard',             label: 'Dashboard',        icon: LayoutDashboard },
-  { path: '/tasks',                 label: 'Task Board',       icon: ClipboardList },
-  { path: '/clock-records',         label: 'Time & Attendance', icon: Clock },
-  { path: '/audit-log',             label: 'Audit Log',        icon: FileText },
-  { path: '/locations',             label: 'Location Board',   icon: MapPin },
-  { path: '/employees',             label: 'Employees',        icon: Users },
-  { path: '/employees/repository',  label: 'Directory',        icon: BookUser },
-  { path: '/contact-directory',     label: 'Contacts',         icon: BookUser },
-  { path: '/geofence-settings',     label: 'Geofence',         icon: Radio },
-  { path: '/permissions',           label: 'Permissions',      icon: Shield },
-  { path: '/payroll',              label: 'Payroll',          icon: DollarSign },
-  { path: '/security-dashboard',   label: 'Security',         icon: Lock },
-  { path: '/analytics',            label: 'Analytics',        icon: BarChart2 },
+  { path: '/dashboard',            label: 'Dashboard',         icon: LayoutDashboard },
+  { path: '/tasks',                label: 'Task Board',        icon: ClipboardList },
+  { path: '/clock-records',        label: 'Time & Attendance', icon: Clock },
+  { path: '/audit-log',            label: 'Audit Log',         icon: FileText },
+  { path: '/locations',            label: 'Location Board',    icon: MapPin },
+  { path: '/employees',            label: 'Employees',         icon: Users },
+  { path: '/employees/repository', label: 'Directory',         icon: BookUser },
+  { path: '/contact-directory',    label: 'Contacts',          icon: BookUser },
+  { path: '/geofence-settings',    label: 'Geofence',          icon: Radio },
+  { path: '/permissions',          label: 'Permissions',       icon: Shield },
+  { path: '/payroll',              label: 'Payroll',           icon: DollarSign },
+  { path: '/security-dashboard',   label: 'Security',          icon: Lock },
+  { path: '/analytics',            label: 'Analytics',         icon: BarChart2 },
 ];
 
+// Permission key controls visibility; null = always show if role matches
 const OPERATOR_NAV = [
-  { path: '/dashboard',             label: 'Dashboard',        icon: LayoutDashboard },
-  { path: '/tasks',                 label: 'Task Board',       icon: ClipboardList, permission: 'view_all_tasks' },
-  { path: '/clock-records',         label: 'Time & Attendance', icon: Clock, permission: 'view_clock_records' },
-  { path: '/audit-log',             label: 'Audit Log',        icon: FileText, permission: 'view_clock_records' },
-  { path: '/locations',             label: 'Location Board',   icon: MapPin, permission: 'view_employee_locations' },
-  { path: '/employees/repository',  label: 'Directory',        icon: BookUser },
-  { path: '/contact-directory',     label: 'Contacts',         icon: BookUser },
+  { path: '/dashboard',            label: 'Dashboard',         icon: LayoutDashboard, permission: null },
+  { path: '/tasks',                label: 'Task Board',        icon: ClipboardList,   permission: 'view_all_tasks' },
+  { path: '/clock-records',        label: 'Time & Attendance', icon: Clock,           permission: 'view_clock_records' },
+  { path: '/audit-log',            label: 'Audit Log',         icon: FileText,        permission: 'view_clock_records' },
+  { path: '/locations',            label: 'Location Board',    icon: MapPin,          permission: 'view_employee_locations' },
+  { path: '/employees/repository', label: 'Directory',         icon: BookUser,        permission: null },
+  { path: '/contact-directory',    label: 'Contacts',          icon: BookUser,        permission: null },
 ];
 
 const EMPLOYEE_NAV = [
-  { path: '/my-tasks',          label: 'My Tasks',         icon: ListTodo },
-  { path: '/contact-directory', label: 'My Contact Info',  icon: BookUser },
+  { path: '/my-tasks',          label: 'My Tasks',        icon: ListTodo },
+  { path: '/contact-directory', label: 'My Contact Info', icon: BookUser },
 ];
 
 export default function Sidebar({ onClose }) {
   const { user } = useAuth();
-  const { permissions, userPermissions, permissionsByRole } = usePermissions();
+  const userCan = useUserCan(user);
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
 
   const userRole = user?.role || 'employee';
 
   let navItems = [];
-  if (userRole === 'owner') navItems = SUPER_ADMIN_NAV;
-  else if (userRole === 'super_admin') navItems = SUPER_ADMIN_NAV;
-  else if (userRole === 'operator') {
-    navItems = OPERATOR_NAV.filter(item => {
-      if (!item.permission) return true;
-      return hasPermission(permissions, userRole, item.permission, user?.email, userPermissions, permissionsByRole);
-    });
+  if (userRole === 'owner' || userRole === 'super_admin') {
+    navItems = SUPER_ADMIN_NAV;
+  } else if (userRole === 'operator') {
+    navItems = OPERATOR_NAV.filter(item => !item.permission || userCan(item.permission));
   } else {
     navItems = EMPLOYEE_NAV;
   }
@@ -80,9 +64,9 @@ export default function Sidebar({ onClose }) {
 
   return (
     <aside className={cn(
-      "h-screen flex flex-col transition-all duration-200 sticky top-0 z-30",
-      "bg-sidebar border-r border-sidebar-border",
-      collapsed ? "w-[56px]" : "w-[220px]"
+      'h-screen flex flex-col transition-all duration-200 sticky top-0 z-30',
+      'bg-sidebar border-r border-sidebar-border',
+      collapsed ? 'w-[56px]' : 'w-[220px]'
     )}>
       {/* Logo */}
       <div className="h-11 flex items-center px-4 border-b border-sidebar-border gap-2.5 flex-shrink-0">
@@ -103,14 +87,14 @@ export default function Sidebar({ onClose }) {
           const active = isActive(item.path);
           return (
             <Link
-              key={item.path}
+              key={item.path + item.label}
               to={item.path}
               onClick={() => onClose?.()}
               className={cn(
-                "flex items-center gap-2.5 px-2.5 py-2 rounded-md text-sm font-medium transition-all",
+                'flex items-center gap-2.5 px-2.5 py-2 rounded-md text-sm font-medium transition-all',
                 active
-                  ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                  : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                  ? 'bg-sidebar-primary text-sidebar-primary-foreground'
+                  : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
               )}
               title={collapsed ? item.label : undefined}
             >
@@ -124,13 +108,12 @@ export default function Sidebar({ onClose }) {
       {/* Mobile bottom nav */}
       <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-card border-t border-border flex items-center justify-around px-2 py-1">
         {[
-          { path: '/dashboard', icon: LayoutDashboard, label: 'Home', roles: ['owner','super_admin','operator'] },
-          { path: '/tasks', icon: ClipboardList, label: 'Tasks', roles: ['owner','super_admin','operator'] },
-          { path: '/my-tasks', icon: ListTodo, label: 'My Tasks', roles: ['employee'] },
-          { path: '/clock-records', icon: Clock, label: 'Clock', roles: ['owner','super_admin','operator'] },
-          { path: '/my-tasks', icon: Clock, label: 'Clock', roles: ['employee'] },
+          { path: '/dashboard', icon: LayoutDashboard, label: 'Home',     roles: ['owner', 'super_admin', 'operator'] },
+          { path: '/tasks',     icon: ClipboardList,   label: 'Tasks',    roles: ['owner', 'super_admin', 'operator'], permission: 'view_all_tasks' },
+          { path: '/my-tasks',  icon: ListTodo,        label: 'My Tasks', roles: ['employee'] },
+          { path: '/clock-records', icon: Clock,       label: 'Clock',    roles: ['owner', 'super_admin', 'operator'], permission: 'view_clock_records' },
         ]
-          .filter(item => item.roles.includes(userRole))
+          .filter(item => item.roles.includes(userRole) && (!item.permission || userCan(item.permission)))
           .slice(0, 4)
           .map(item => {
             const Icon = item.icon;
@@ -157,8 +140,8 @@ export default function Sidebar({ onClose }) {
           <button
             onClick={() => base44.auth.logout()}
             className={cn(
-              "flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs text-sidebar-foreground/70 hover:bg-destructive/20 hover:text-red-400 transition-colors flex-1",
-              collapsed && "justify-center"
+              'flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs text-sidebar-foreground/70 hover:bg-destructive/20 hover:text-red-400 transition-colors flex-1',
+              collapsed && 'justify-center'
             )}
             title={collapsed ? 'Logout' : undefined}
           >

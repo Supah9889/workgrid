@@ -9,8 +9,8 @@ export default function TaskRow({ task, onEdit, onDelete }) {
       <div className="flex-1 min-w-0">
         <p className="text-sm font-medium truncate">{task.title}</p>
         <p className="text-xs text-muted-foreground truncate">
-          {task.assigned_to_name
-            ? task.assigned_to_name
+          {task.assigned_employee_name
+            ? task.assigned_employee_name
             : <span className="text-orange-500">Unassigned</span>}
         </p>
       </div>

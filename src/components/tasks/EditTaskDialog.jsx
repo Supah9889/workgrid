@@ -20,8 +20,8 @@ export default function EditTaskDialog({ open, onOpenChange, task, employees = [
       setForm({
         title: task.title || '',
         part_description: task.part_description || '',
-        assigned_to: task.assigned_to || '',
-        assigned_to_name: task.assigned_to_name || '',
+        assigned_employee: task.assigned_employee || '',
+        assigned_employee_name: task.assigned_employee_name || '',
         delivery_address: task.delivery_address || '',
         store_name: task.store_name || '',
         requested_by: task.requested_by || '',
@@ -37,7 +37,7 @@ export default function EditTaskDialog({ open, onOpenChange, task, employees = [
 
   const handleEmployeeChange = (email) => {
     const emp = employees.find(e => e.email === email);
-    setForm(f => ({ ...f, assigned_to: email, assigned_to_name: emp?.full_name || '' }));
+    setForm(f => ({ ...f, assigned_employee: email, assigned_employee_name: emp?.full_name || '' }));
   };
 
   const handleSubmit = async () => {
@@ -46,21 +46,21 @@ export default function EditTaskDialog({ open, onOpenChange, task, employees = [
 
     const updates = { ...form };
 
-    if (form.assigned_to !== task.assigned_to) {
+    if (form.assigned_employee !== task.assigned_employee) {
       const log = task.reassignment_log || [];
       updates.reassignment_log = [...log, {
-        from_email: task.assigned_to,
-        from_name: task.assigned_to_name,
-        to_email: form.assigned_to,
-        to_name: form.assigned_to_name,
+        from_email: task.assigned_employee,
+        from_name: task.assigned_employee_name,
+        to_email: form.assigned_employee,
+        to_name: form.assigned_employee_name,
         reassigned_at: new Date().toISOString(),
       }];
     }
 
     try {
       await base44.entities.Task.update(task.id, updates);
-      if (form.assigned_to !== task.assigned_to) {
-        await notifyTaskReassigned(task, task.assigned_to, form.assigned_to);
+      if (form.assigned_employee !== task.assigned_employee) {
+        await notifyTaskReassigned(task, task.assigned_employee, form.assigned_employee);
       }
       if (form.status !== task.status) {
         await notifyTaskStatusChanged(task, form.status);
@@ -129,7 +129,7 @@ export default function EditTaskDialog({ open, onOpenChange, task, employees = [
           </div>
           <div className="space-y-1.5">
             <Label>Assign To</Label>
-            <Select value={form.assigned_to || ''} onValueChange={handleEmployeeChange}>
+            <Select value={form.assigned_employee || ''} onValueChange={handleEmployeeChange}>
               <SelectTrigger><SelectValue placeholder="Select employee" /></SelectTrigger>
               <SelectContent>
                 {employees.filter(e => e.role !== 'super_admin').map(emp => (

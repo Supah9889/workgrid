@@ -177,7 +177,7 @@ export default function MyTasks() {
 
   const { data: tasks = [], isLoading, isError } = useQuery({
     queryKey: ['my-tasks', user?.email],
-    queryFn: () => base44.entities.Task.filter({ assigned_to: user.email }),
+    queryFn: () => base44.entities.Task.filter({ assigned_employee: user.email }),
     enabled: !!user?.email,
   });
 

@@ -39,7 +39,7 @@ export default function TaskBoard() {
     queryKey: ['active-employees'],
     queryFn: async () => {
       const users = await base44.entities.User.list();
-      return users.filter(u => u.status !== 'inactive' && u.role !== 'super_admin');
+      return users.filter(u => u.status !== 'inactive');
     },
   });
 
@@ -57,8 +57,8 @@ export default function TaskBoard() {
   });
 
   const sorted = [...visibleTasks].sort((a, b) => {
-    const aU = !a.assigned_to ? 0 : 1;
-    const bU = !b.assigned_to ? 0 : 1;
+    const aU = !a.assigned_employee ? 0 : 1;
+    const bU = !b.assigned_employee ? 0 : 1;
     if (aU !== bU) return aU - bU;
     return new Date(b.created_date) - new Date(a.created_date);
   });
@@ -66,7 +66,7 @@ export default function TaskBoard() {
   const filtered = sorted.filter(t =>
     !search ||
     t.title?.toLowerCase().includes(search.toLowerCase()) ||
-    t.assigned_to_name?.toLowerCase().includes(search.toLowerCase()) ||
+    t.assigned_employee_name?.toLowerCase().includes(search.toLowerCase()) ||
     t.delivery_address?.toLowerCase().includes(search.toLowerCase())
   );
 

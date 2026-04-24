@@ -11,8 +11,8 @@ import { useToast } from '@/components/ui/use-toast';
 const EMPTY_FORM = {
   title: '',
   part_description: '',
-  assigned_to: '',
-  assigned_to_name: '',
+  assigned_employee: '',
+  assigned_employee_name: '',
   delivery_address: '',
   store_name: '',
   requested_by: '',
@@ -39,7 +39,7 @@ export default function CreateTaskDialog({ open, onOpenChange, employees = [], o
 
   const handleEmployeeChange = (email) => {
     const emp = employees.find(e => e.email === email);
-    setForm(f => ({ ...f, assigned_to: email, assigned_to_name: emp?.full_name || '' }));
+    setForm(f => ({ ...f, assigned_employee: email, assigned_employee_name: emp?.full_name || '' }));
   };
 
   const handleSubmit = async () => {
@@ -47,7 +47,7 @@ export default function CreateTaskDialog({ open, onOpenChange, employees = [], o
     setSaving(true);
     try {
       const task = await base44.entities.Task.create({ ...form, status: 'pending' });
-      if (form.assigned_to) await notifyTaskAssigned(task, form.assigned_to);
+      if (form.assigned_employee) await notifyTaskAssigned(task, form.assigned_employee);
       setForm(EMPTY_FORM);
       onOpenChange(false);
       onCreated?.();
@@ -122,7 +122,7 @@ export default function CreateTaskDialog({ open, onOpenChange, employees = [], o
           </Field>
 
           <Field label="Assign To">
-            <Select value={form.assigned_to} onValueChange={handleEmployeeChange}>
+            <Select value={form.assigned_employee} onValueChange={handleEmployeeChange}>
               <SelectTrigger className={inputCls}>
                 <SelectValue placeholder="Select employee" />
               </SelectTrigger>

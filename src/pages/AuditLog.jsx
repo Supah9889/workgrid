@@ -147,7 +147,10 @@ export default function AuditLog() {
 
   const { data: settingsList = [] } = useQuery({
     queryKey: ['app-settings'],
-    queryFn: () => base44.entities.AppSettings.list(),
+    queryFn: async () => {
+      try { return await base44.entities.AppSettings.list(); }
+      catch { return []; }
+    },
   });
 
   const { data: users = [] } = useQuery({
@@ -218,8 +221,9 @@ export default function AuditLog() {
       {/* Records */}
       {isError ? (
         <div className="flex flex-col items-center justify-center h-64 gap-3">
-          <p className="text-destructive font-medium">Failed to load data</p>
-          <p className="text-muted-foreground text-sm">Check your connection and refresh the page</p>
+          <p className="text-destructive font-medium">Could not load audit records</p>
+          <p className="text-muted-foreground text-sm">Check your connection and try again.</p>
+          <button onClick={() => window.location.reload()} className="text-sm text-primary underline">Retry</button>
         </div>
       ) : isLoading ? (
         <div className="flex justify-center py-16">

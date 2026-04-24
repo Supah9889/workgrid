@@ -13,8 +13,11 @@ export default function PinModal({ title = 'Enter Your PIN', onSuccess, onCancel
   const [error, setError] = useState('');
   const [checking, setChecking] = useState(false);
 
+  // If no PIN hash exists, block the action and prompt setup
+  const noPinSet = expectedHash == null || expectedHash === '';
+
   const addDigit = async (d) => {
-    if (digits.length >= 4 || checking) return;
+    if (noPinSet || digits.length >= 4 || checking) return;
     const next = [...digits, d];
     setDigits(next);
 
@@ -47,10 +50,10 @@ export default function PinModal({ title = 'Enter Your PIN', onSuccess, onCancel
         <span className="text-white font-bold text-xl">W</span>
       </div>
 
-      <h2 className="text-white text-lg font-semibold mb-1">{title}</h2>
+      <h2 className="text-white text-lg font-semibold mb-1">{noPinSet ? 'PIN Required' : title}</h2>
 
-      <p className={`text-sm mb-6 h-5 transition-colors ${error ? 'text-red-400' : 'text-slate-400'}`}>
-        {error || 'Enter your 4-digit PIN'}
+      <p className={`text-sm mb-6 h-5 transition-colors ${error || noPinSet ? 'text-red-400' : 'text-slate-400'}`}>
+        {noPinSet ? 'No PIN set. Complete setup before clocking in.' : error || 'Enter your 4-digit PIN'}
       </p>
 
       {/* 4-dot display */}
@@ -69,8 +72,14 @@ export default function PinModal({ title = 'Enter Your PIN', onSuccess, onCancel
         ))}
       </div>
 
+      {noPinSet && (
+        <p className="text-xs text-slate-500 mb-4 text-center max-w-xs">
+          Go to your profile and complete onboarding to set a PIN before using clock actions.
+        </p>
+      )}
+
       {/* Number pad */}
-      <div className="grid grid-cols-3 gap-3 w-64">
+      <div className={`grid grid-cols-3 gap-3 w-64 ${noPinSet ? 'opacity-30 pointer-events-none' : ''}`}>
         {PAD_KEYS.map((key, i) => {
           if (key === '') return <div key={i} />;
           const isBack = key === '⌫';

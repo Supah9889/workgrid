@@ -1,19 +1,28 @@
 import { base44 } from '@/api/base44Client';
 
 async function getAdminUsers() {
-  const users = await base44.entities.User.list();
-  return users.filter(u => u.role === 'super_admin' || u.role === 'operator' || u.role === 'owner');
+  try {
+    const users = await base44.entities.User.list();
+    return users.filter(u => u.role === 'super_admin' || u.role === 'operator' || u.role === 'owner');
+  } catch (e) {
+    console.warn('[notificationService] Could not fetch admin users:', e);
+    return [];
+  }
 }
 
 async function createNotification(recipientEmail, title, message, type) {
-  await base44.entities.Notification.create({
-    recipient_email: recipientEmail,
-    title,
-    message,
-    type,
-    read: false,
-    created_at: new Date().toISOString(),
-  });
+  if (!recipientEmail) return;
+  try {
+    await base44.entities.Notification.create({
+      recipient_email: recipientEmail,
+      title,
+      message,
+      type: type || 'info',
+      read: false,
+    });
+  } catch (e) {
+    console.warn('[notificationService] Failed to create notification:', e);
+  }
 }
 
 export async function notifyTaskAssigned(task, employeeEmail) {

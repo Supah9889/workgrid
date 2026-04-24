@@ -93,7 +93,11 @@ export default function Onboarding() {
         setTimeout(() => navigate('/'), 500);
       }, 2000);
     } catch (e) {
-      setError('Something went wrong. Please try again.');
+      console.error('[Onboarding] Save failed:', e);
+      const msg = e?.message?.toLowerCase().includes('network') || e?.message?.toLowerCase().includes('fetch')
+        ? 'Network error — check your connection and try again.'
+        : 'Could not save your profile. Please try again.';
+      setError(msg);
     }
     setSaving(false);
   };

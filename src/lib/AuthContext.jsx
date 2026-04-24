@@ -81,11 +81,21 @@ export const AuthProvider = ({ children }) => {
         if (results && results.length > 0) {
           userEntity = results[0];
         } else {
-          userEntity = await base44.entities.User.create({ email: authUser.email, role: 'employee' });
+          // First login — create entity with safe defaults
+          userEntity = await base44.entities.User.create({
+            email: authUser.email,
+            role: 'employee',
+            has_onboarded: false,
+          });
         }
       } catch (entityError) {
+        // Non-fatal: fall back to a safe in-memory user so the app still loads
         console.error('Failed to fetch/create User entity:', entityError);
+        userEntity = { email: authUser.email, role: 'employee', has_onboarded: false };
       }
+
+      // Guarantee role is always a valid string — never undefined
+      if (!userEntity?.role) userEntity = { ...userEntity, role: 'employee' };
 
       const mergedUser = { ...authUser, ...userEntity };
       setUser(mergedUser);

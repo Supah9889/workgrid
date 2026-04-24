@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
+import { toast } from 'sonner';
 
 const QUEUE_KEY = 'workgrid_offline_task_queue';
 
@@ -62,8 +63,20 @@ export function useOfflineQueue(onSynced) {
     setIsSyncing(false);
     syncLockRef.current = false;
 
-    if (failed.length < queue.length) {
-      onSynced?.(); // Trigger a data refetch after successful syncs
+    const synced = queue.length - failed.length;
+    if (synced > 0) {
+      onSynced?.();
+      toast({
+        title: `${synced} update${synced !== 1 ? 's' : ''} synced`,
+        description: 'Your offline task changes have been saved.',
+      });
+    }
+    if (failed.length > 0) {
+      toast({
+        title: `${failed.length} update${failed.length !== 1 ? 's' : ''} failed to sync`,
+        description: 'Some offline changes could not be saved. They will retry on next reconnect.',
+        variant: 'destructive',
+      });
     }
   }, [onSynced]);
 

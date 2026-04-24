@@ -1,41 +1,61 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
-import { MapPin, Navigation, Save, Loader2, Radio } from 'lucide-react';
+import { MapPin, Navigation, Save, Loader2, Radio, ShieldOff } from 'lucide-react';
+
+const DEFAULT_FORM = {
+  geofence_enabled: false,
+  geofence_lat: '',
+  geofence_lng: '',
+  geofence_radius: 0.5,
+};
 
 export default function GeofenceSettings() {
   const { toast } = useToast();
+  const { user } = useAuth();
   const queryClient = useQueryClient();
 
-  const { data: settingsList = [], isLoading, isError } = useQuery({
+  // Authorization guard — only super_admin and owner may access this page
+  const isAuthorized = user?.role === 'super_admin' || user?.role === 'owner';
+
+  // Treat any fetch error as "no settings yet" — never hard-fail the page
+  const { data: settingsList, isLoading, isError } = useQuery({
     queryKey: ['app-settings'],
-    queryFn: () => base44.entities.AppSettings.list(),
+    queryFn: async () => {
+      try {
+        return await base44.entities.AppSettings.list();
+      } catch (e) {
+        console.warn('[GeofenceSettings] Could not load settings, treating as empty:', e);
+        return [];
+      }
+    },
+    retry: 2,
+    retryDelay: 1000,
   });
 
-  const existing = settingsList[0] || null;
+  const existing = settingsList?.[0] ?? null;
 
-  const [form, setForm] = useState({
-    geofence_enabled: false,
-    geofence_lat: '',
-    geofence_lng: '',
-    geofence_radius: 0.5,
-  });
+  const [form, setForm] = useState(DEFAULT_FORM);
   const [saving, setSaving] = useState(false);
   const [locating, setLocating] = useState(false);
 
   useEffect(() => {
     if (existing) {
       setForm({
-        geofence_enabled: existing.geofence_enabled || false,
+        geofence_enabled: existing.geofence_enabled ?? false,
         geofence_lat: existing.geofence_lat != null ? String(existing.geofence_lat) : '',
         geofence_lng: existing.geofence_lng != null ? String(existing.geofence_lng) : '',
-        geofence_radius: existing.geofence_radius || 0.5,
+        geofence_radius: existing.geofence_radius ?? 0.5,
       });
+    } else if (settingsList !== undefined) {
+      // Data loaded but no record exists — reset to safe defaults
+      setForm(DEFAULT_FORM);
     }
-  }, [existing?.id]);
+  }, [existing?.id, settingsList]);
 
   const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
 
@@ -96,16 +116,21 @@ export default function GeofenceSettings() {
 
   const radiusFt = Math.round(form.geofence_radius * 5280);
 
-  if (isLoading) return (
-    <div className="flex justify-center py-24">
-      <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
+  if (!isAuthorized) return (
+    <div className="flex flex-col items-center justify-center min-h-[60vh] p-8 text-center">
+      <div className="w-16 h-16 rounded-2xl bg-destructive/10 flex items-center justify-center mb-4">
+        <ShieldOff className="w-8 h-8 text-destructive" />
+      </div>
+      <h2 className="text-xl font-bold mb-2">Access Denied</h2>
+      <p className="text-muted-foreground text-sm max-w-sm">
+        Only Super Admins and Owners can manage geofence settings.
+      </p>
     </div>
   );
 
-  if (isError) return (
-    <div className="flex flex-col items-center justify-center h-64 gap-3">
-      <p className="text-destructive font-medium">Failed to load data</p>
-      <p className="text-muted-foreground text-sm">Check your connection and refresh the page</p>
+  if (isLoading) return (
+    <div className="flex justify-center py-24">
+      <div className="w-8 h-8 border-4 border-muted border-t-primary rounded-full animate-spin" />
     </div>
   );
 
@@ -226,11 +251,14 @@ export default function GeofenceSettings() {
           )}
         </div>
 
-        <div className="pt-2 border-t border-border">
+        <div className="pt-2 border-t border-border flex items-center gap-4">
           <Button onClick={handleSave} disabled={saving} className="gap-2">
             {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}
             Save Settings
           </Button>
+          {!existing && (
+            <p className="text-xs text-muted-foreground">No settings saved yet — defaults will be created on first save.</p>
+          )}
         </div>
       </div>
     </div>

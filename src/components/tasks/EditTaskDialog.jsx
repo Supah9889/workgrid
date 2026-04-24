@@ -25,6 +25,7 @@ export default function EditTaskDialog({ open, onOpenChange, task, employees = [
         delivery_address: task.delivery_address || '',
         store_name: task.store_name || '',
         requested_by: task.requested_by || '',
+        customer_email: task.customer_email || '',
         scheduled_time: task.scheduled_time || '',
         notes: task.notes || '',
         priority: task.priority || 'medium',
@@ -95,6 +96,10 @@ export default function EditTaskDialog({ open, onOpenChange, task, employees = [
           <div className="space-y-1.5">
             <Label>Requested By</Label>
             <Input value={form.requested_by || ''} onChange={e => set('requested_by', e.target.value)} />
+          </div>
+          <div className="space-y-1.5">
+            <Label>Customer Email <span className="text-xs text-muted-foreground">(gets en route & delivered notifications)</span></Label>
+            <Input type="email" value={form.customer_email || ''} onChange={e => set('customer_email', e.target.value)} placeholder="customer@example.com" />
           </div>
           <div className="space-y-1.5">
             <Label>Delivery Address</Label>

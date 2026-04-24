@@ -16,6 +16,7 @@ const EMPTY_FORM = {
   delivery_address: '',
   store_name: '',
   requested_by: '',
+  customer_email: '',
   scheduled_time: '',
   notes: '',
   priority: 'medium',
@@ -99,6 +100,16 @@ export default function CreateTaskDialog({ open, onOpenChange, employees = [], o
               value={form.requested_by}
               onChange={e => set('requested_by', e.target.value)}
               placeholder="Insurance company or requester"
+              className={inputCls}
+            />
+          </Field>
+
+          <Field label="Customer Email (for notifications)">
+            <Input
+              type="email"
+              value={form.customer_email}
+              onChange={e => set('customer_email', e.target.value)}
+              placeholder="customer@example.com"
               className={inputCls}
             />
           </Field>

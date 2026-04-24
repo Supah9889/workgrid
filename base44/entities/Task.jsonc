@@ -55,6 +55,10 @@
       "type": "string",
       "description": "Who requested the delivery"
     },
+    "customer_email": {
+      "type": "string",
+      "description": "Customer or stakeholder email \u2014 receives en_route and delivered notifications"
+    },
     "delivery_address": {
       "type": "string",
       "description": "Delivery destination address"

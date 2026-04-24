@@ -1,0 +1,48 @@
+{
+  "name": "UserPermission",
+  "type": "object",
+  "properties": {
+    "user_email": {
+      "type": "string",
+      "description": "Email of the user these permissions belong to"
+    },
+    "user_role": {
+      "type": "string",
+      "description": "Role of the user at the time permissions were saved"
+    },
+    "view_all_tasks": {
+      "type": "boolean"
+    },
+    "create_tasks": {
+      "type": "boolean"
+    },
+    "reassign_tasks": {
+      "type": "boolean"
+    },
+    "view_employee_locations": {
+      "type": "boolean"
+    },
+    "view_own_location": {
+      "type": "boolean"
+    },
+    "view_clock_records": {
+      "type": "boolean"
+    },
+    "view_own_clock_records": {
+      "type": "boolean"
+    },
+    "access_notifications": {
+      "type": "boolean"
+    },
+    "add_notes_to_tasks": {
+      "type": "boolean"
+    },
+    "view_activity_feed": {
+      "type": "boolean"
+    }
+  },
+  "required": [
+    "user_email",
+    "user_role"
+  ]
+}

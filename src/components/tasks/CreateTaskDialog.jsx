@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2 } from 'lucide-react';
+import { useToast } from '@/components/ui/use-toast';
 
 const EMPTY_FORM = {
   title: '',
@@ -30,6 +31,7 @@ function Field({ label, children }) {
 }
 
 export default function CreateTaskDialog({ open, onOpenChange, employees = [], onCreated }) {
+  const { toast } = useToast();
   const [form, setForm] = useState(EMPTY_FORM);
   const [saving, setSaving] = useState(false);
 

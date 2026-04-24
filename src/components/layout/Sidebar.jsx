@@ -55,7 +55,7 @@ const EMPLOYEE_NAV = [
 
 export default function Sidebar({ onClose }) {
   const { user } = useAuth();
-  const { permissions } = usePermissions();
+  const { permissions, userPermissions } = usePermissions();
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -67,7 +67,7 @@ export default function Sidebar({ onClose }) {
   else if (userRole === 'operator') {
     navItems = OPERATOR_NAV.filter(item => {
       if (!item.permission) return true;
-      return hasPermission(permissions, userRole, item.permission);
+      return hasPermission(permissions, userRole, item.permission, user?.email, userPermissions);
     });
   } else {
     navItems = EMPLOYEE_NAV;

@@ -32,12 +32,14 @@ const DEFAULT_PERMISSIONS = {
 
 export function PermissionsProvider({ children }) {
   const [permissionsByRole, setPermissionsByRole] = useState({ operator: null, employee: null });
+  // Per-user permission overrides: { [email]: { ...permFields } }
+  const [userPermissions, setUserPermissions] = useState({});
   const [loading, setLoading] = useState(true);
 
   const fetchPermissions = useCallback(async () => {
+    // Load role-level permissions
     const records = await base44.entities.RolePermission.list();
     const result = { operator: null, employee: null };
-
     for (const role of ['operator', 'employee']) {
       const found = records.find(r => r.role === role);
       if (found) {
@@ -48,12 +50,22 @@ export function PermissionsProvider({ children }) {
       }
     }
     setPermissionsByRole(result);
+
+    // Load all user-level permission overrides
+    try {
+      const userPerms = await base44.entities.UserPermission.list();
+      const map = {};
+      userPerms.forEach(p => { map[p.user_email] = p; });
+      setUserPermissions(map);
+    } catch { /* UserPermission entity may not exist yet */ }
+
     setLoading(false);
   }, []);
 
   useEffect(() => {
     fetchPermissions();
-    const unsubscribe = base44.entities.RolePermission.subscribe((event) => {
+
+    const unsubRole = base44.entities.RolePermission.subscribe((event) => {
       if (event.type === 'update' || event.type === 'create') {
         const role = event.data.role;
         if (role === 'operator' || role === 'employee') {
@@ -61,7 +73,22 @@ export function PermissionsProvider({ children }) {
         }
       }
     });
-    return unsubscribe;
+
+    // Subscribe to user-level permission changes
+    let unsubUser = () => {};
+    try {
+      unsubUser = base44.entities.UserPermission.subscribe((event) => {
+        if (event.type === 'update' || event.type === 'create') {
+          const email = event.data.user_email;
+          if (email) setUserPermissions(prev => ({ ...prev, [email]: event.data }));
+        }
+        if (event.type === 'delete') {
+          fetchPermissions(); // re-fetch to clear deleted record
+        }
+      });
+    } catch { /* ignore if entity doesn't exist */ }
+
+    return () => { unsubRole(); unsubUser(); };
   }, [fetchPermissions]);
 
   // Legacy: expose operator permissions as `permissions` for backward compat
@@ -73,8 +100,25 @@ export function PermissionsProvider({ children }) {
     await base44.entities.RolePermission.update(record.id, { [key]: value });
   };
 
+  // Get effective permissions for a specific user (user-level override OR role default)
+  const getPermissionsForUser = (userEmail, userRole) => {
+    if (userPermissions[userEmail]) return userPermissions[userEmail];
+    if (userRole === 'operator' || userRole === 'employee') {
+      return permissionsByRole[userRole] || DEFAULT_PERMISSIONS[userRole];
+    }
+    return DEFAULT_PERMISSIONS.employee;
+  };
+
   return (
-    <PermissionsContext.Provider value={{ permissions, permissionsByRole, loading, updatePermission, refetch: fetchPermissions }}>
+    <PermissionsContext.Provider value={{
+      permissions,
+      permissionsByRole,
+      userPermissions,
+      loading,
+      updatePermission,
+      getPermissionsForUser,
+      refetch: fetchPermissions,
+    }}>
       {children}
     </PermissionsContext.Provider>
   );
@@ -86,8 +130,19 @@ export function usePermissions() {
   return ctx;
 }
 
-export function hasPermission(permissions, userRole, permissionKey) {
+/**
+ * Check if a user has a specific permission.
+ * Checks user-level overrides first, then falls back to role-level permissions.
+ */
+export function hasPermission(permissions, userRole, permissionKey, userEmail, userPermissionsMap) {
   if (userRole === 'super_admin' || userRole === 'owner') return true;
+
+  // Check user-level override first
+  if (userEmail && userPermissionsMap && userPermissionsMap[userEmail]) {
+    return !!userPermissionsMap[userEmail][permissionKey];
+  }
+
+  // Fall back to role-level permission
   if (permissions && (userRole === 'operator' || userRole === 'employee')) {
     return !!permissions[permissionKey];
   }

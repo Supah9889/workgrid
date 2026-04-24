@@ -2,7 +2,8 @@ import { useState, useEffect, useRef } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
-import { Loader2, MapPin, Clock, Package, Building2, ChevronDown, ChevronUp, ListTodo, Navigation } from 'lucide-react';
+import { Loader2, MapPin, Clock, Package, Building2, ChevronDown, ChevronUp, ListTodo, Navigation, WifiOff, RefreshCw } from 'lucide-react';
+import { useOfflineQueue } from '@/hooks/useOfflineQueue';
 import { PriorityBadge, StatusBadge } from '@/components/tasks/TaskBadges';
 import { useToast } from '@/components/ui/use-toast';
 import { format } from 'date-fns';
@@ -73,7 +74,7 @@ const STATUS_SECTION = {
   delivered: { label: 'Delivered', color: 'text-emerald-400' },
 };
 
-function DeliveryCard({ task, onUpdated }) {
+function DeliveryCard({ task, onUpdated, updateTaskStatus }) {
   const { toast } = useToast();
   const [expanded, setExpanded] = useState(false);
   const [saving, setSaving] = useState(false);
@@ -84,7 +85,7 @@ function DeliveryCard({ task, onUpdated }) {
     e.stopPropagation();
     if (!advance || saving) return;
     setSaving(true);
-    await base44.entities.Task.update(task.id, { status: advance.next });
+    await updateTaskStatus(task.id, { status: advance.next });
     toast({ title: `Status updated to ${STATUS_SECTION[advance.next]?.label}` });
     onUpdated();
     setSaving(false);
@@ -209,7 +210,7 @@ function DeliveryCard({ task, onUpdated }) {
                 {nextStep && (
                   <button
                     onClick={async () => {
-                      await base44.entities.Task.update(task.id, { status: nextStep.key });
+                      await updateTaskStatus(task.id, { status: nextStep.key });
                       onUpdated();
                     }}
                     className="w-full py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors"
@@ -232,6 +233,10 @@ export default function MyTasks() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
 
+  const refresh = () => queryClient.invalidateQueries({ queryKey: ['my-tasks', user?.email] });
+
+  const { updateTaskStatus, pendingCount, isSyncing, isOnline } = useOfflineQueue(refresh);
+
   const { data: tasks = [], isLoading, isError } = useQuery({
     queryKey: ['my-tasks', user?.email],
     queryFn: () => base44.entities.Task.filter({ assigned_employee: user.email }),
@@ -248,8 +253,6 @@ export default function MyTasks() {
     );
     return unsub;
   }, [user?.email, queryClient]);
-
-  const refresh = () => queryClient.invalidateQueries({ queryKey: ['my-tasks', user?.email] });
 
   const grouped = STATUS_ORDER.reduce((acc, s) => {
     acc[s] = tasks.filter(t => t.status === s);
@@ -271,6 +274,22 @@ export default function MyTasks() {
       </div>
 
       {user && <div className="px-4 pt-4"><ClockButton user={user} /></div>}
+
+      {/* Offline / syncing banner */}
+      {!isOnline && (
+        <div className="mx-4 mt-3 flex items-center gap-2 rounded-lg bg-yellow-500/10 border border-yellow-500/30 px-3 py-2.5 text-yellow-400 text-xs font-medium">
+          <WifiOff className="w-3.5 h-3.5 flex-shrink-0" />
+          <span>You're offline. Status changes are saved locally and will sync when you reconnect.</span>
+          {pendingCount > 0 && <span className="ml-auto bg-yellow-500/20 px-1.5 py-0.5 rounded-full">{pendingCount} pending</span>}
+        </div>
+      )}
+      {isOnline && isSyncing && (
+        <div className="mx-4 mt-3 flex items-center gap-2 rounded-lg bg-blue-500/10 border border-blue-500/20 px-3 py-2.5 text-blue-400 text-xs font-medium">
+          <RefreshCw className="w-3.5 h-3.5 animate-spin flex-shrink-0" />
+          Syncing {pendingCount} offline update{pendingCount !== 1 ? 's' : ''}…
+        </div>
+      )}
+      {isOnline && !isSyncing && pendingCount === 0 && false && null /* hidden when all clear */}
 
       <div className="px-4 py-4 pb-28 space-y-3">
         {isError ? (
@@ -300,7 +319,7 @@ export default function MyTasks() {
                   </p>
                   <div className="space-y-2">
                     {grouped[status].map(t => (
-                      <DeliveryCard key={t.id} task={t} onUpdated={refresh} />
+                      <DeliveryCard key={t.id} task={t} onUpdated={refresh} updateTaskStatus={updateTaskStatus} />
                     ))}
                   </div>
                 </div>
@@ -314,7 +333,7 @@ export default function MyTasks() {
                 </p>
                 <div className="space-y-2">
                   {delivered.map(t => (
-                    <DeliveryCard key={t.id} task={t} onUpdated={refresh} />
+                    <DeliveryCard key={t.id} task={t} onUpdated={refresh} updateTaskStatus={updateTaskStatus} />
                   ))}
                 </div>
               </div>

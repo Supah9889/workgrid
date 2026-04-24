@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Plus, Search } from 'lucide-react';
@@ -8,12 +9,24 @@ import { format } from 'date-fns';
 import TaskRow from '@/components/tasks/TaskRow';
 import CreateTaskDialog from '@/components/tasks/CreateTaskDialog';
 import EditTaskDialog from '@/components/tasks/EditTaskDialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 export default function TaskBoard() {
   const queryClient = useQueryClient();
+  const { user } = useAuth();
   const [search, setSearch] = useState('');
   const [createOpen, setCreateOpen] = useState(false);
   const [editTask, setEditTask] = useState(null);
+  const [deleteTask, setDeleteTask] = useState(null);
+
+  const isSuperAdmin = user?.role === 'super_admin' || user?.role === 'owner';
+
+  const handleDelete = async () => {
+    if (!deleteTask) return;
+    await base44.entities.Task.delete(deleteTask.id);
+    setDeleteTask(null);
+    queryClient.invalidateQueries({ queryKey: ['tasks-today'] });
+  };
 
   const today = new Date();
 
@@ -97,7 +110,7 @@ export default function TaskBoard() {
           </div>
         ) : (
           filtered.map(task => (
-            <TaskRow key={task.id} task={task} onEdit={setEditTask} />
+            <TaskRow key={task.id} task={task} onEdit={setEditTask} onDelete={isSuperAdmin ? setDeleteTask : undefined} />
           ))
         )}
       </div>
@@ -108,6 +121,21 @@ export default function TaskBoard() {
         employees={employees}
         onCreated={() => queryClient.invalidateQueries({ queryKey: ['tasks-today'] })}
       />
+
+      <AlertDialog open={!!deleteTask} onOpenChange={open => !open && setDeleteTask(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Task</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{deleteTask?.title}</strong>? This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       <EditTaskDialog
         open={!!editTask}

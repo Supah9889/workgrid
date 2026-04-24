@@ -1,9 +1,9 @@
 import { Button } from '@/components/ui/button';
 import { PriorityBadge, StatusBadge } from '@/components/tasks/TaskBadges';
-import { Pencil } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
-export default function TaskRow({ task, onEdit }) {
+export default function TaskRow({ task, onEdit, onDelete }) {
   return (
     <div className="flex items-center gap-3 px-4 py-3 hover:bg-muted/40 transition-colors border-b last:border-b-0">
       <div className="flex-1 min-w-0">
@@ -22,6 +22,11 @@ export default function TaskRow({ task, onEdit }) {
       <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0" onClick={() => onEdit(task)}>
         <Pencil className="w-3.5 h-3.5" />
       </Button>
+      {onDelete && (
+        <Button variant="ghost" size="icon" className="h-8 w-8 flex-shrink-0 text-destructive hover:text-destructive hover:bg-destructive/10" onClick={() => onDelete(task)}>
+          <Trash2 className="w-3.5 h-3.5" />
+        </Button>
+      )}
     </div>
   );
 }

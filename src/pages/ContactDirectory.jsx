@@ -22,9 +22,14 @@ function ContactCard({ person, canEdit, onSave }) {
 
   const handleSave = async () => {
     setSaving(true);
-    await onSave(person.id, { contact_phone: phone, contact_email: email });
-    setSaving(false);
-    setEditing(false);
+    try {
+      await onSave(person.id, { contact_phone: phone, contact_email: email });
+      setEditing(false);
+    } catch {
+      // Error toast is handled in parent onSave
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleCancel = () => {
@@ -142,7 +147,11 @@ export default function ContactDirectory() {
       queryClient.invalidateQueries({ queryKey: ['contact-directory-users'] });
       toast({ title: 'Contact info updated' });
     } catch (err) {
-      toast({ title: 'Something went wrong', description: err.message, variant: 'destructive' });
+      console.error('[ContactDirectory] Save failed:', err);
+      const description = err?.message?.toLowerCase().includes('network') || err?.message?.toLowerCase().includes('fetch')
+        ? 'Network error — check your connection and try again.'
+        : (err.message || 'Your contact info could not be saved. Please try again.');
+      toast({ title: 'Failed to save contact info', description, variant: 'destructive' });
     }
   };
 

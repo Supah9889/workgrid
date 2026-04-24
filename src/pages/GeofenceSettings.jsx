@@ -85,7 +85,11 @@ export default function GeofenceSettings() {
       queryClient.invalidateQueries({ queryKey: ['app-settings'] });
       toast({ title: 'Geofence settings saved' });
     } catch (e) {
-      toast({ title: 'Failed to save settings', variant: 'destructive' });
+      console.error('[GeofenceSettings] Save failed:', e);
+      const description = e?.message?.toLowerCase().includes('network') || e?.message?.toLowerCase().includes('fetch')
+        ? 'Network error — check your connection and try again.'
+        : (e.message || 'Settings could not be saved. Please try again.');
+      toast({ title: 'Failed to save settings', description, variant: 'destructive' });
     }
     setSaving(false);
   };

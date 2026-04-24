@@ -176,39 +176,44 @@ export default function ClockButton({ user }) {
   };
 
   const executeLunchStart = async () => {
+    if (!clockRecord?.id) throw new Error('No active clock record found.');
     const pos = await capturePosition();
     const now = new Date().toISOString();
-    await base44.entities.ClockRecord.update(clockRecord.id, {
+    const updated = await base44.entities.ClockRecord.update(clockRecord.id, {
       lunch_start: now,
       lunch_start_lat: pos?.lat ?? null,
       lunch_start_lng: pos?.lng ?? null,
     });
-    setClockRecord(r => ({ ...r, lunch_start: now }));
+    setClockRecord(r => ({ ...r, ...updated }));
     toast({ title: 'Lunch started' });
   };
 
   const executeLunchEnd = async () => {
+    if (!clockRecord?.id) throw new Error('No active clock record found.');
     const now = new Date();
     const pos = await capturePosition();
     const lunchMins = clockRecord.lunch_start
       ? Math.round((now - new Date(clockRecord.lunch_start)) / 60000)
       : 0;
-    await base44.entities.ClockRecord.update(clockRecord.id, {
+    const updated = await base44.entities.ClockRecord.update(clockRecord.id, {
       lunch_end: now.toISOString(),
       lunch_end_lat: pos?.lat ?? null,
       lunch_end_lng: pos?.lng ?? null,
       total_lunch_minutes: lunchMins,
     });
-    setClockRecord(r => ({ ...r, lunch_end: now.toISOString(), total_lunch_minutes: lunchMins }));
+    setClockRecord(r => ({ ...r, ...updated }));
     toast({ title: `Back from lunch — ${lunchMins} min` });
   };
 
   const executePunchOut = async () => {
+    if (!clockRecord?.id) throw new Error('No active clock record found.');
     const now = new Date();
     const pos = await capturePosition();
     const geo = checkGeofence(pos?.lat, pos?.lng);
 
     const inTime = new Date(clockRecord.punch_in_time);
+    if (!clockRecord.punch_in_time || isNaN(inTime)) throw new Error('Clock-in time is missing or corrupted.');
+
     const totalSecs = (now - inTime) / 1000;
     const lunchSecs = (clockRecord.total_lunch_minutes || 0) * 60;
     const totalHours = Math.max(0, Math.round(((totalSecs - lunchSecs) / 3600) * 100) / 100);
@@ -247,8 +252,26 @@ export default function ClockButton({ user }) {
       if (action === 'lunch_end')   await executeLunchEnd();
       if (action === 'punch_out')   await executePunchOut();
     } catch (e) {
-      console.error('Punch action failed:', e);
-      toast({ title: 'Action failed. Please try again.', variant: 'destructive' });
+      console.error(`[ClockButton] ${action} failed:`, e);
+      const ACTION_LABELS = {
+        punch_in: 'Punch in',
+        punch_out: 'Punch out',
+        lunch_start: 'Start lunch',
+        lunch_end: 'End lunch',
+      };
+      const label = ACTION_LABELS[action] || 'Action';
+      // Classify the error for a meaningful message
+      let description = 'An unexpected error occurred. Please try again.';
+      if (e?.message?.toLowerCase().includes('network') || e?.message?.toLowerCase().includes('fetch')) {
+        description = 'Network error — check your connection and try again.';
+      } else if (e?.message?.toLowerCase().includes('permission') || e?.message?.toLowerCase().includes('denied')) {
+        description = 'Location permission was denied. Check your browser settings.';
+      } else if (e?.message?.toLowerCase().includes('validation') || e?.message?.toLowerCase().includes('required')) {
+        description = 'Missing required data. Contact your administrator.';
+      } else if (e?.message) {
+        description = e.message;
+      }
+      toast({ title: `${label} failed`, description, variant: 'destructive' });
     }
     setActionLoading(false);
   };

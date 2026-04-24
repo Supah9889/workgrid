@@ -41,7 +41,8 @@ export default function EmployeeManagement() {
       toast({ title: 'Role updated successfully' });
     },
     onError: (err) => {
-      toast({ title: 'Something went wrong', description: err.message, variant: 'destructive' });
+      console.error('[EmployeeManagement] Role change failed:', err);
+      toast({ title: 'Failed to update role', description: err.message || 'Please try again.', variant: 'destructive' });
     },
   });
 
@@ -82,7 +83,8 @@ export default function EmployeeManagement() {
       toast({ title: 'Employee deactivated and tasks unassigned' });
     },
     onError: (err) => {
-      toast({ title: 'Something went wrong', description: err.message, variant: 'destructive' });
+      console.error('[EmployeeManagement] Deactivate failed:', err);
+      toast({ title: 'Failed to deactivate employee', description: err.message || 'Some tasks may not have been unassigned. Please check manually.', variant: 'destructive' });
     },
   });
 
@@ -95,7 +97,8 @@ export default function EmployeeManagement() {
       toast({ title: 'Employee reactivated' });
     },
     onError: (err) => {
-      toast({ title: 'Something went wrong', description: err.message, variant: 'destructive' });
+      console.error('[EmployeeManagement] Reactivate failed:', err);
+      toast({ title: 'Failed to reactivate employee', description: err.message || 'Please try again.', variant: 'destructive' });
     },
   });
 

@@ -60,16 +60,25 @@ export default function EditTaskDialog({ open, onOpenChange, task, employees = [
 
     try {
       await base44.entities.Task.update(task.id, updates);
-      if (form.assigned_employee !== task.assigned_employee) {
-        await notifyTaskReassigned(task, task.assigned_employee, form.assigned_employee);
-      }
-      if (form.status !== task.status) {
-        await notifyTaskStatusChanged(task, form.status);
+      // Notifications are non-critical — log failures but don't block save
+      try {
+        if (form.assigned_employee !== task.assigned_employee) {
+          await notifyTaskReassigned(task, task.assigned_employee, form.assigned_employee);
+        }
+        if (form.status !== task.status) {
+          await notifyTaskStatusChanged(task, form.status);
+        }
+      } catch (notifErr) {
+        console.warn('[EditTaskDialog] Notification failed (task saved ok):', notifErr);
       }
       onOpenChange(false);
       onSaved?.();
     } catch (err) {
-      toast({ title: 'Something went wrong', description: err.message, variant: 'destructive' });
+      console.error('[EditTaskDialog] Task update failed:', err);
+      const description = err?.message?.toLowerCase().includes('network') || err?.message?.toLowerCase().includes('fetch')
+        ? 'Network error — check your connection and try again.'
+        : (err.message || 'The task could not be saved. Please try again.');
+      toast({ title: 'Failed to save task', description, variant: 'destructive' });
     }
     setSaving(false);
   };

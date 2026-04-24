@@ -113,7 +113,11 @@ const AuthenticatedApp = () => {
               <GeofenceSettings />
             </RoleGuard>
           } />
-          <Route path="/contact-directory" element={<ContactDirectory />} />
+          <Route path="/contact-directory" element={
+            <RoleGuard allowedRoles={['super_admin', 'owner', 'operator', 'employee']}>
+              <ContactDirectory />
+            </RoleGuard>
+          } />
           <Route path="/payroll" element={
             <RoleGuard allowedRoles={['super_admin', 'owner']}>
               <PayrollSummary />

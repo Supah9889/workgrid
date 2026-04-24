@@ -26,6 +26,7 @@ import GeofenceSettings from '@/pages/GeofenceSettings';
 import ContactDirectory from '@/pages/ContactDirectory';
 import SecurityDashboard from '@/pages/SecurityDashboard';
 import PayrollSummary from '@/pages/PayrollSummary';
+import Analytics from '@/pages/Analytics';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, needsOnboarding } = useAuth();
@@ -116,6 +117,11 @@ const AuthenticatedApp = () => {
           <Route path="/payroll" element={
             <RoleGuard allowedRoles={['super_admin', 'owner']}>
               <PayrollSummary />
+            </RoleGuard>
+          } />
+          <Route path="/analytics" element={
+            <RoleGuard allowedRoles={['super_admin', 'operator', 'owner']}>
+              <Analytics />
             </RoleGuard>
           } />
           <Route path="/security-dashboard" element={

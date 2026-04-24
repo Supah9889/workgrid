@@ -19,6 +19,7 @@ import {
   BookUser,
   Lock,
   DollarSign,
+  BarChart2,
 } from 'lucide-react';
 import { useState } from 'react';
 import { cn } from '@/lib/utils';
@@ -36,6 +37,7 @@ const SUPER_ADMIN_NAV = [
   { path: '/permissions',           label: 'Permissions',      icon: Shield },
   { path: '/payroll',              label: 'Payroll',          icon: DollarSign },
   { path: '/security-dashboard',   label: 'Security',         icon: Lock },
+  { path: '/analytics',            label: 'Analytics',        icon: BarChart2 },
 ];
 
 const OPERATOR_NAV = [

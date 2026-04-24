@@ -1,34 +1,29 @@
 import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { usePermissions } from '@/lib/permissions.jsx';
+import { DEFAULT_PERMISSIONS as ROLE_DEFAULTS, ROLE_ALLOWED_PERMISSIONS } from '@/lib/permissions.jsx';
 import { useToast } from '@/components/ui/use-toast';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Shield, Eye, PlusCircle, ArrowRightLeft, MapPin, Clock, Bell, FileText, Activity, Lock, User } from 'lucide-react';
+import { Button } from '@/components/ui/button';
 import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
+  Shield, Eye, PlusCircle, ArrowRightLeft, MapPin, Clock,
+  Bell, FileText, Activity, Lock, User, RotateCcw, CheckCircle2, AlertCircle,
+} from 'lucide-react';
 
-// Derive which roles can toggle each permission from the single source of truth
+// Build the permission matrix — allowedRoles derived from ROLE_ALLOWED_PERMISSIONS
 const PERMISSION_MATRIX = [
-  { key: 'view_all_tasks',           label: 'View Master Task Board',       icon: Eye           },
-  { key: 'create_tasks',             label: 'Create Tasks',                 icon: PlusCircle    },
-  { key: 'reassign_tasks',           label: 'Reassign Tasks',               icon: ArrowRightLeft },
-  { key: 'view_employee_locations',  label: 'View All Employee Locations',  icon: MapPin        },
-  { key: 'view_own_location',        label: 'View Own Location Indicator',  icon: MapPin        },
-  { key: 'view_clock_records',       label: 'View Time & Attendance Panel', icon: Clock         },
-  { key: 'view_own_clock_records',   label: 'View Own Clock Records',       icon: Clock         },
-  { key: 'access_notifications',     label: 'Access Notification Center',   icon: Bell          },
-  { key: 'add_notes_to_tasks',       label: 'Add Notes to Tasks',           icon: FileText      },
-  { key: 'view_activity_feed',       label: 'View Activity Feed',           icon: Activity      },
+  { key: 'view_all_tasks',          label: 'View Master Task Board',       icon: Eye,            desc: 'See all tasks across all employees' },
+  { key: 'create_tasks',            label: 'Create Tasks',                 icon: PlusCircle,     desc: 'Create new delivery tasks' },
+  { key: 'reassign_tasks',          label: 'Reassign Tasks',               icon: ArrowRightLeft, desc: 'Move tasks between employees' },
+  { key: 'view_employee_locations', label: 'View All Employee Locations',  icon: MapPin,         desc: 'See live GPS map of all staff' },
+  { key: 'view_own_location',       label: 'View Own Location Indicator',  icon: MapPin,         desc: 'See their own location on map' },
+  { key: 'view_clock_records',      label: 'View Time & Attendance Panel', icon: Clock,          desc: 'Access full punch record history' },
+  { key: 'view_own_clock_records',  label: 'View Own Clock Records',       icon: Clock,          desc: 'See their own punch history' },
+  { key: 'access_notifications',    label: 'Access Notification Center',   icon: Bell,           desc: 'Receive in-app notifications' },
+  { key: 'add_notes_to_tasks',      label: 'Add Notes to Tasks',           icon: FileText,       desc: 'Attach notes to delivery tasks' },
+  { key: 'view_activity_feed',      label: 'View Activity Feed',           icon: Activity,       desc: 'See the live system activity log' },
 ].map(p => ({
   ...p,
   allowedRoles: Object.entries(ROLE_ALLOWED_PERMISSIONS)
@@ -36,18 +31,17 @@ const PERMISSION_MATRIX = [
     .map(([role]) => role),
 }));
 
-import { DEFAULT_PERMISSIONS as ROLE_DEFAULTS, ROLE_ALLOWED_PERMISSIONS } from '@/lib/permissions.jsx';
-
 export default function PermissionsBoard() {
   const { toast } = useToast();
   const { permissionsByRole } = usePermissions();
 
   const [employees, setEmployees] = useState([]);
   const [selectedEmail, setSelectedEmail] = useState('');
-  const [userPerms, setUserPerms] = useState(null); // the UserPermission record for selected user
+  const [userPerms, setUserPerms] = useState(null);
   const [loadingEmployees, setLoadingEmployees] = useState(true);
   const [loadingPerms, setLoadingPerms] = useState(false);
-  const [pending, setPending] = useState(null); // { key, value, label }
+  const [savingKey, setSavingKey] = useState(null); // which key is mid-save
+  const [resetting, setResetting] = useState(false);
 
   // Load operator + employee users
   useEffect(() => {
@@ -63,49 +57,75 @@ export default function PermissionsBoard() {
     if (!selectedEmail) { setUserPerms(null); return; }
     setLoadingPerms(true);
     base44.entities.UserPermission.filter({ user_email: selectedEmail }).then(records => {
-      if (records.length > 0) {
-        setUserPerms(records[0]);
-      } else {
-        setUserPerms(null); // will show role defaults
-      }
+      setUserPerms(records.length > 0 ? records[0] : null);
       setLoadingPerms(false);
     });
   }, [selectedEmail]);
 
   const selectedUser = employees.find(e => e.email === selectedEmail);
   const selectedRole = selectedUser?.role || 'employee';
+  const roleDefaults = ROLE_DEFAULTS[selectedRole] || ROLE_DEFAULTS.employee;
 
-  // Effective permissions: user-level override or role default
-  const effectivePerms = userPerms
-    ? userPerms
-    : (ROLE_DEFAULTS[selectedRole] || ROLE_DEFAULTS.employee);
+  // Effective permissions shown in toggles
+  const effectivePerms = userPerms ? userPerms : roleDefaults;
 
-  const handleToggle = (key, value, label) => {
-    setPending({ key, value, label });
-  };
+  const hasCustomPerms = !!userPerms;
 
-  const confirmChange = async () => {
-    if (!pending || !selectedUser) return;
+  const handleToggle = async (key, value, label) => {
+    if (!selectedUser) return;
+    setSavingKey(key);
     try {
-      const newPerms = { ...effectivePerms, [pending.key]: pending.value };
       if (userPerms?.id) {
-        const updated = await base44.entities.UserPermission.update(userPerms.id, { [pending.key]: pending.value });
+        const updated = await base44.entities.UserPermission.update(userPerms.id, { [key]: value });
         setUserPerms(updated);
       } else {
-        // Create a new record from role defaults + this change
         const created = await base44.entities.UserPermission.create({
           user_email: selectedUser.email,
           user_role: selectedRole,
-          ...ROLE_DEFAULTS[selectedRole],
-          [pending.key]: pending.value,
+          ...roleDefaults,
+          [key]: value,
         });
         setUserPerms(created);
       }
-      toast({ title: 'Permission updated', description: `${pending.label} ${pending.value ? 'enabled' : 'disabled'} for ${selectedUser.full_name || selectedUser.email}.` });
-      setPending(null);
+      toast({
+        title: (
+          <span className="flex items-center gap-2">
+            <CheckCircle2 className="w-4 h-4 text-green-500" />
+            Permission updated
+          </span>
+        ),
+        description: `"${label}" ${value ? 'enabled' : 'disabled'} for ${selectedUser.full_name || selectedUser.email}.`,
+      });
     } catch (err) {
-      toast({ title: 'Something went wrong', description: err.message, variant: 'destructive' });
-      setPending(null);
+      toast({
+        title: (
+          <span className="flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 text-destructive" />
+            Save failed
+          </span>
+        ),
+        description: err.message,
+        variant: 'destructive',
+      });
+    } finally {
+      setSavingKey(null);
+    }
+  };
+
+  const handleResetToDefaults = async () => {
+    if (!userPerms?.id || !selectedUser) return;
+    setResetting(true);
+    try {
+      await base44.entities.UserPermission.delete(userPerms.id);
+      setUserPerms(null);
+      toast({
+        title: 'Permissions reset',
+        description: `${selectedUser.full_name || selectedUser.email} is now using role defaults.`,
+      });
+    } catch (err) {
+      toast({ title: 'Reset failed', description: err.message, variant: 'destructive' });
+    } finally {
+      setResetting(false);
     }
   };
 
@@ -118,30 +138,44 @@ export default function PermissionsBoard() {
         </div>
         <div>
           <h1 className="text-xl font-bold tracking-tight">Permissions Board</h1>
-          <p className="text-muted-foreground text-sm">Select an employee to manage their individual access permissions.</p>
+          <p className="text-muted-foreground text-sm">Manage individual access for each employee or operator.</p>
         </div>
       </div>
 
       {/* Employee selector */}
       <div className="mb-5">
-        <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5 block">Select Employee</label>
+        <label className="text-xs font-semibold uppercase tracking-wide text-muted-foreground mb-1.5 block">
+          Select Employee or Operator
+        </label>
         {loadingEmployees ? (
           <div className="h-10 bg-muted rounded-md animate-pulse" />
         ) : (
           <Select value={selectedEmail} onValueChange={setSelectedEmail}>
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="Choose an employee or operator..." />
+              <SelectValue placeholder="Choose a user to manage permissions..." />
             </SelectTrigger>
             <SelectContent>
-              {employees.map(emp => (
-                <SelectItem key={emp.email} value={emp.email}>
-                  <div className="flex items-center gap-2">
-                    <User className="w-3.5 h-3.5 text-muted-foreground" />
-                    <span>{emp.full_name || emp.email}</span>
-                    <span className="text-xs text-muted-foreground capitalize ml-1">({emp.role})</span>
+              {/* Group by role */}
+              {['operator', 'employee'].map(role => {
+                const group = employees.filter(e => e.role === role);
+                if (!group.length) return null;
+                return (
+                  <div key={role}>
+                    <div className="px-2 py-1.5 text-[10px] font-bold uppercase tracking-widest text-muted-foreground">
+                      {role}s
+                    </div>
+                    {group.map(emp => (
+                      <SelectItem key={emp.email} value={emp.email}>
+                        <div className="flex items-center gap-2">
+                          <User className="w-3.5 h-3.5 text-muted-foreground" />
+                          <span>{emp.full_name || emp.email}</span>
+                          <span className="text-xs text-muted-foreground ml-1">{emp.email}</span>
+                        </div>
+                      </SelectItem>
+                    ))}
                   </div>
-                </SelectItem>
-              ))}
+                );
+              })}
             </SelectContent>
           </Select>
         )}
@@ -151,8 +185,8 @@ export default function PermissionsBoard() {
       {!selectedEmail ? (
         <div className="flex flex-col items-center justify-center py-20 text-center border-2 border-dashed border-border rounded-xl">
           <Shield className="w-10 h-10 text-muted-foreground mb-3" />
-          <p className="text-muted-foreground font-medium">No employee selected</p>
-          <p className="text-sm text-muted-foreground mt-1">Choose an employee above to view and manage their permissions.</p>
+          <p className="text-muted-foreground font-medium">No user selected</p>
+          <p className="text-sm text-muted-foreground mt-1">Choose a user above to view and manage their permissions.</p>
         </div>
       ) : loadingPerms ? (
         <div className="flex items-center justify-center h-48">
@@ -160,63 +194,84 @@ export default function PermissionsBoard() {
         </div>
       ) : (
         <>
-          {/* Selected user info */}
+          {/* Selected user info bar */}
           <div className="flex items-center gap-3 mb-4 p-3 rounded-lg bg-accent/40 border border-border">
-            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
+            <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary flex-shrink-0">
               {(selectedUser?.full_name || selectedUser?.email || '?')[0].toUpperCase()}
             </div>
-            <div>
-              <p className="text-sm font-semibold">{selectedUser?.full_name || selectedUser?.email}</p>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-semibold truncate">{selectedUser?.full_name || selectedUser?.email}</p>
               <p className="text-xs text-muted-foreground capitalize">{selectedRole} · {selectedUser?.email}</p>
             </div>
-            {userPerms ? (
-              <span className="ml-auto text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-full">Custom permissions</span>
-            ) : (
-              <span className="ml-auto text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">Using role defaults</span>
-            )}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              {hasCustomPerms ? (
+                <>
+                  <span className="text-xs font-medium text-primary bg-primary/10 px-2 py-1 rounded-full">
+                    Custom permissions
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={handleResetToDefaults}
+                    disabled={resetting}
+                    className="text-xs text-muted-foreground h-7 gap-1"
+                    title="Reset to role defaults"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    Reset
+                  </Button>
+                </>
+              ) : (
+                <span className="text-xs text-muted-foreground bg-muted px-2 py-1 rounded-full">
+                  Role defaults
+                </span>
+              )}
+            </div>
           </div>
 
+          {/* Permission toggles */}
           <Card>
             <CardHeader className="border-b border-border py-3 px-5">
-              <div className="grid grid-cols-[1fr_100px] gap-4 items-center">
+              <div className="flex items-center justify-between">
                 <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Permission</span>
-                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground text-center">Access</span>
+                <span className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">Access</span>
               </div>
             </CardHeader>
             <CardContent className="p-0 divide-y divide-border">
               {PERMISSION_MATRIX.map((perm) => {
                 const Icon = perm.icon;
                 const isLocked = !perm.allowedRoles.includes(selectedRole);
-                const currentValue = !!effectivePerms[perm.key];
+                const currentValue = isLocked ? false : !!effectivePerms[perm.key];
+                const isSaving = savingKey === perm.key;
 
                 return (
                   <div
                     key={perm.key}
-                    className="grid grid-cols-[1fr_100px] gap-4 items-center px-5 py-4 hover:bg-muted/30 transition-colors"
+                    className={`flex items-center justify-between px-5 py-4 transition-colors ${isLocked ? 'opacity-50' : 'hover:bg-muted/30'}`}
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-7 h-7 rounded-md bg-muted flex items-center justify-center flex-shrink-0">
-                        <Icon className="w-3.5 h-3.5 text-muted-foreground" />
+                    <div className="flex items-center gap-3 min-w-0">
+                      <div className={`w-7 h-7 rounded-md flex items-center justify-center flex-shrink-0 ${isLocked ? 'bg-muted' : 'bg-muted'}`}>
+                        {isLocked
+                          ? <Lock className="w-3.5 h-3.5 text-muted-foreground" />
+                          : <Icon className="w-3.5 h-3.5 text-muted-foreground" />
+                        }
                       </div>
-                      <div>
+                      <div className="min-w-0">
                         <p className="text-sm font-medium">{perm.label}</p>
-                        {isLocked && (
-                          <p className="text-xs text-muted-foreground">Not available for {selectedRole}s</p>
-                        )}
+                        <p className="text-xs text-muted-foreground">
+                          {isLocked ? `Not available for ${selectedRole}s` : perm.desc}
+                        </p>
                       </div>
                     </div>
-                    <div className="flex justify-center">
-                      {isLocked ? (
-                        <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <Lock className="w-3 h-3" />
-                          <span>Locked</span>
-                        </div>
-                      ) : (
-                        <Switch
-                          checked={currentValue}
-                          onCheckedChange={(val) => handleToggle(perm.key, val, perm.label)}
-                        />
+                    <div className="flex items-center gap-2 ml-4 flex-shrink-0">
+                      {isSaving && (
+                        <div className="w-3.5 h-3.5 border-2 border-primary border-t-transparent rounded-full animate-spin" />
                       )}
+                      <Switch
+                        checked={currentValue}
+                        disabled={isLocked || isSaving}
+                        onCheckedChange={(val) => handleToggle(perm.key, val, perm.label)}
+                      />
                     </div>
                   </div>
                 );
@@ -225,26 +280,10 @@ export default function PermissionsBoard() {
           </Card>
 
           <p className="text-xs text-muted-foreground mt-3 text-center">
-            Owner and Super Admins always have full access regardless of these settings.
+            Owner and Super Admin roles always have full access and are not affected by these settings.
           </p>
         </>
       )}
-
-      <AlertDialog open={!!pending} onOpenChange={(open) => !open && setPending(null)}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>Confirm Permission Change</AlertDialogTitle>
-            <AlertDialogDescription>
-              You are about to <strong>{pending?.value ? 'enable' : 'disable'}</strong> <em>{pending?.label}</em> for <strong>{selectedUser?.full_name || selectedUser?.email}</strong>.
-              This will take effect immediately.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmChange}>Confirm</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </div>
   );
 }

@@ -151,11 +151,14 @@ export default function SuperAdminDashboard() {
   const { data: clockRecords = [] } = useQuery({
     queryKey: ['dash-clock-today'],
     queryFn: () => base44.entities.ClockRecord.list(),
+    staleTime: 60000,
+    refetchInterval: 120000,
   });
 
   const { data: allTasks = [], isLoading, isError } = useQuery({
     queryKey: ['dashboard-tasks'],
     queryFn: () => base44.entities.Task.list('-created_date', 200),
+    staleTime: 15000,
   });
 
   const { data: employees = [] } = useQuery({
@@ -164,13 +167,18 @@ export default function SuperAdminDashboard() {
       const users = await base44.entities.User.list();
       return users.filter(u => u.role !== 'super_admin' && u.status !== 'inactive');
     },
+    staleTime: 120000,
   });
 
   useEffect(() => {
-    const unsub = base44.entities.Task.subscribe(() =>
-      queryClient.invalidateQueries({ queryKey: ['dashboard-tasks'] })
-    );
-    return unsub;
+    let debounceTimer = null;
+    const unsub = base44.entities.Task.subscribe(() => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['dashboard-tasks'] });
+      }, 1500);
+    });
+    return () => { unsub(); clearTimeout(debounceTimer); };
   }, [queryClient]);
 
   const unassigned = allTasks.filter(t => !t.assigned_employee);

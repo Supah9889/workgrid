@@ -31,15 +31,20 @@ export default function NotificationCenter() {
     queryKey: ['notifications', user?.email],
     queryFn: () => base44.entities.Notification.filter({ recipient_email: user.email }),
     enabled: !!user?.email,
-    refetchInterval: 30000,
+    refetchInterval: 60000,
+    staleTime: 30000,
   });
 
   useEffect(() => {
     if (!user?.email) return;
-    const unsub = base44.entities.Notification.subscribe(() =>
-      queryClient.invalidateQueries({ queryKey: ['notifications', user.email] })
-    );
-    return unsub;
+    let debounceTimer = null;
+    const unsub = base44.entities.Notification.subscribe(() => {
+      clearTimeout(debounceTimer);
+      debounceTimer = setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['notifications', user.email] });
+      }, 2000);
+    });
+    return () => { unsub(); clearTimeout(debounceTimer); };
   }, [user?.email, queryClient]);
 
   useEffect(() => {

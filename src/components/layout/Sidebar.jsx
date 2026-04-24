@@ -106,7 +106,10 @@ export default function Sidebar({ onClose }) {
       </nav>
 
       {/* Mobile bottom nav */}
-      <nav className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-card border-t border-border flex items-center justify-around px-2 py-1">
+      <nav
+        className="fixed bottom-0 left-0 right-0 z-40 md:hidden bg-card border-t border-border flex items-center justify-around px-2"
+        style={{ paddingBottom: 'calc(0.5rem + var(--sab))', height: 'calc(56px + var(--sab))' }}
+      >
         {[
           { path: '/dashboard', icon: LayoutDashboard, label: 'Home',     roles: ['owner', 'super_admin', 'operator'] },
           { path: '/tasks',     icon: ClipboardList,   label: 'Tasks',    roles: ['owner', 'super_admin', 'operator'], permission: 'view_all_tasks' },

@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import PullToRefresh from '@/components/ui/PullToRefresh';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { useAuth } from '@/lib/AuthContext';
@@ -17,6 +18,11 @@ export default function TaskBoard() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
   const [search, setSearch] = useState('');
+
+  const handleRefresh = () => Promise.all([
+    queryClient.invalidateQueries({ queryKey: ['tasks-today'] }),
+    queryClient.invalidateQueries({ queryKey: ['active-employees'] }),
+  ]);
   const [createOpen, setCreateOpen] = useState(false);
   const [editTask, setEditTask] = useState(null);
   const [deleteTask, setDeleteTask] = useState(null);
@@ -82,7 +88,8 @@ export default function TaskBoard() {
   );
 
   return (
-    <div className="p-6 max-w-7xl mx-auto">
+    <PullToRefresh onRefresh={handleRefresh}>
+    <div className="p-6 max-w-7xl mx-auto animate-in fade-in slide-in-from-right-4 duration-200">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Master Task Board</h1>
@@ -179,5 +186,6 @@ export default function TaskBoard() {
         onSaved={() => queryClient.invalidateQueries({ queryKey: ['tasks-today'] })}
       />
     </div>
+    </PullToRefresh>
   );
 }

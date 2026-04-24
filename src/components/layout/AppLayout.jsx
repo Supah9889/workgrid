@@ -22,7 +22,10 @@ export default function AppLayout() {
       </>
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top bar */}
-        <header className="h-11 border-b border-border bg-card flex items-center justify-end px-5 gap-3 flex-shrink-0">
+        <header
+          className="border-b border-border bg-card flex items-center justify-end px-5 gap-3 flex-shrink-0"
+          style={{ paddingTop: 'calc(0.75rem + var(--sat))', minHeight: 'calc(2.75rem + var(--sat))' }}
+        >
           <button onClick={() => setSidebarOpen(true)} className="md:hidden p-2 rounded-md hover:bg-muted transition-colors mr-2">
             <Menu className="w-5 h-5" />
           </button>
@@ -35,7 +38,7 @@ export default function AppLayout() {
             <span className="text-xs font-medium hidden sm:block">{user?.full_name || user?.email}</span>
           </div>
         </header>
-        <main className="flex-1 overflow-auto pb-16 md:pb-0">
+        <main className="flex-1 overflow-auto main-content-pad page-scroll-container">
           <Outlet />
         </main>
       </div>

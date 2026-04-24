@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { Hexagon } from 'lucide-react';
@@ -59,6 +59,11 @@ export default function PinLogin() {
   const [attempts, setAttempts] = useState(0);
   const [checking, setChecking] = useState(false);
 
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
+
   const locked = attempts >= MAX_ATTEMPTS;
 
   const initials = (user?.full_name || user?.email || '?')
@@ -92,7 +97,11 @@ export default function PinLogin() {
   };
 
   return (
-    <div className="min-h-screen bg-[#0f172a] flex flex-col items-center justify-center px-6">
+    <div
+      className="min-h-screen bg-[#0f172a] flex flex-col items-center justify-center px-6 animate-in fade-in duration-200"
+      onTouchMove={(e) => e.preventDefault()}
+      style={{ touchAction: 'none' }}
+    >
       <div className="w-14 h-14 rounded-2xl bg-blue-600 flex items-center justify-center mb-8 shadow-lg shadow-blue-500/30">
         <Hexagon className="w-7 h-7 text-white" />
       </div>

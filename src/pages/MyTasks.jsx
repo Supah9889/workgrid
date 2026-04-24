@@ -1,4 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
+import PullToRefresh from '@/components/ui/PullToRefresh';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
@@ -269,7 +270,8 @@ export default function MyTasks() {
   const delivered = tasks.filter(t => t.status === 'delivered');
 
   return (
-    <div className="min-h-screen bg-[#0f172a]">
+    <PullToRefresh onRefresh={refresh}>
+    <div className="min-h-screen bg-[#0f172a] animate-in fade-in slide-in-from-right-4 duration-200">
       {/* Header */}
       <div className="px-4 pt-6 pb-4 border-b border-slate-800">
         <h1 className="text-xl font-bold text-white tracking-tight">My Deliveries</h1>
@@ -348,5 +350,6 @@ export default function MyTasks() {
         )}
       </div>
     </div>
+    </PullToRefresh>
   );
 }

@@ -84,7 +84,7 @@ export default function PayrollSummary() {
   const totalWeekHours = users.reduce((sum, u) => sum + calcHours(records, u.email, weekFrom, weekTo), 0);
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-6 max-w-6xl mx-auto animate-in fade-in slide-in-from-right-4 duration-200">
       <div className="flex items-center justify-between mb-6">
         <div className="flex items-center gap-3">
           <DollarSign className="w-6 h-6 text-emerald-500" />

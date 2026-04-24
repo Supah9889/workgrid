@@ -130,7 +130,7 @@ export default function PermissionsBoard() {
   };
 
   return (
-    <div className="p-6 max-w-2xl mx-auto">
+    <div className="p-6 max-w-2xl mx-auto animate-in fade-in slide-in-from-right-4 duration-200">
       {/* Header */}
       <div className="flex items-center gap-3 mb-6">
         <div className="w-9 h-9 rounded-lg bg-primary/10 flex items-center justify-center">

@@ -151,3 +151,20 @@ WorkGrid is a delivery task management app for a small field-service business. A
 - **ContactDirectory page**: Admin sees all, employee sees self; edit contact_phone and contact_email; alert routing note
 - **Sidebar**: Added Audit Log, Geofence, Contacts to super_admin nav; Audit Log + Contacts to operator nav; Contacts to employee nav
 - **DailyLog + LiveStatusList + ClockRecords**: Updated to use new punch_in_time/punch_out_time field names; lunch state shown in LiveStatusList
+
+### Sprint 3 — Prompt 1 ✅ (2026-04-24) — PWA/CSS/Layout
+- **Safe area**: `--sat/--sar/--sab/--sal` CSS vars via `env(safe-area-inset-*)` in `:root`; AppLayout header uses `paddingTop: calc(0.75rem + var(--sat))`; Sidebar mobile bottom nav uses `paddingBottom: calc(0.5rem + var(--sab))`; ChatPanel uses `paddingRight: var(--sar)`; `main-content-pad` class handles dynamic bottom padding
+- **Overscroll**: `html, body { overscroll-behavior: none }` prevents iOS rubber-band bleed; `.scroll-container` and `.page-scroll-container` classes added
+- **Page transitions**: `animate-in fade-in slide-in-from-right-4 duration-200` applied to root div of all 15 pages; `.page-enter/exit` CSS classes added for future CSSTransition use; `src/lib/pageTransition.js` exports the class string
+- **PullToRefresh**: `src/components/ui/PullToRefresh.jsx` created; wraps MyTasks (invalidates my-tasks), SuperAdminDashboard (invalidates dashboard-tasks + dash-employees + dash-clock-today), TaskBoard (invalidates tasks-today + active-employees)
+- **Gesture prevention**: `touch-action: manipulation` on all buttons (no double-tap zoom); `touchAction: none` + `onTouchMove: preventDefault` on PinModal and PinLogin overlays; body `overflow: hidden` locked while overlays are mounted
+- **PWA manifest**: `public/manifest.json` created with WorkGrid branding, dark navy theme, standalone display, portrait orientation
+- **index.html**: `viewport-fit=cover` for safe area support; apple-mobile-web-app-* meta tags; theme-color; title changed from "Base44 APP" to "WorkGrid"
+
+### Sprint 3 — Prompt 2 (PENDING) — Logic/UX
+- Offline queue resilience improvements
+- Background sync registration (service worker)
+- Push notification permission flow
+- Haptic feedback on clock punches
+- Network status indicator
+- Any remaining PWA store-readiness items not covered in Prompt 1

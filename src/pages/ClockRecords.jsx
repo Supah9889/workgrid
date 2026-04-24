@@ -57,7 +57,7 @@ export default function ClockRecords() {
   );
 
   return (
-    <div className="p-6 max-w-6xl mx-auto space-y-6">
+    <div className="p-6 max-w-6xl mx-auto space-y-6 animate-in fade-in slide-in-from-right-4 duration-200">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Time & Attendance</h1>

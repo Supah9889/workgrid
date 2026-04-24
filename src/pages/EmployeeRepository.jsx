@@ -131,7 +131,7 @@ export default function EmployeeRepository() {
   );
 
   return (
-    <div className="p-6 max-w-6xl mx-auto">
+    <div className="p-6 max-w-6xl mx-auto animate-in fade-in slide-in-from-right-4 duration-200">
       <div className="flex items-center justify-between mb-6">
         <div>
           <h1 className="text-2xl font-bold tracking-tight">Employee Directory</h1>

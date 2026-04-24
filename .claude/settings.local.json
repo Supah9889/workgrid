@@ -4,7 +4,14 @@
       "Bash(git add *)",
       "Bash(git commit *)",
       "Bash(git push *)",
-      "Bash(git config *)"
+      "Bash(git config *)",
+      "Bash(git pull *)",
+      "Bash(git stash *)",
+      "Bash(git rebase *)",
+      "Bash(git reset *)",
+      "Bash(sed -n '271,277p' \"C:/Users/seanh/Desktop/workgrid/src/pages/MyTasks.jsx\")",
+      "Bash(sed -n '194,205p' \"C:/Users/seanh/Desktop/workgrid/src/pages/SuperAdminDashboard.jsx\")",
+      "Bash(sed -n '133,140p' \"C:/Users/seanh/Desktop/workgrid/src/pages/EmployeeRepository.jsx\")"
     ]
   }
 }

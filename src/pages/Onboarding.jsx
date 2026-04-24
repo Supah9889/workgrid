@@ -108,7 +108,7 @@ export default function Onboarding() {
   };
 
   return (
-    <div className={`min-h-screen bg-[#0f172a] flex flex-col items-center justify-center px-6 transition-opacity duration-500 ${visible ? 'opacity-100' : 'opacity-0'}`}>
+    <div className={`min-h-screen bg-[#0f172a] flex flex-col items-center justify-center px-6 transition-opacity duration-500 animate-in fade-in duration-200 ${visible ? 'opacity-100' : 'opacity-0'}`}>
 
       {/* Step 1 -- Welcome */}
       {step === 1 && (

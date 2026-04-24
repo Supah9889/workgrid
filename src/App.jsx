@@ -155,7 +155,9 @@ function App() {
     <AuthProvider>
       <QueryClientProvider client={queryClientInstance}>
         <Router>
-          <AuthenticatedApp />
+          <div className="overflow-hidden">
+            <AuthenticatedApp />
+          </div>
         </Router>
         <Toaster />
       </QueryClientProvider>

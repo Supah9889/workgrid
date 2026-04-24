@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Delete } from 'lucide-react';
 
 async function sha256(str) {
@@ -12,6 +12,11 @@ export default function PinModal({ title = 'Enter Your PIN', onSuccess, onCancel
   const [digits, setDigits] = useState([]);
   const [error, setError] = useState('');
   const [checking, setChecking] = useState(false);
+
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => { document.body.style.overflow = ''; };
+  }, []);
 
   // If no PIN hash exists, block the action and prompt setup
   const noPinSet = expectedHash == null || expectedHash === '';
@@ -44,7 +49,11 @@ export default function PinModal({ title = 'Enter Your PIN', onSuccess, onCancel
   };
 
   return (
-    <div className="fixed inset-0 bg-[#0a1628]/97 backdrop-blur-sm flex flex-col items-center justify-center z-50 px-8">
+    <div
+      className="fixed inset-0 bg-[#0a1628]/97 backdrop-blur-sm flex flex-col items-center justify-center z-50 px-8"
+      onTouchMove={(e) => e.preventDefault()}
+      style={{ touchAction: 'none' }}
+    >
       {/* Logo */}
       <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center mb-5 shadow-lg shadow-blue-500/30">
         <span className="text-white font-bold text-xl">W</span>

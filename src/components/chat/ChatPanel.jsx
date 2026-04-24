@@ -39,11 +39,14 @@ export default function ChatPanel() {
       )}
 
       {/* Panel */}
-      <div className={cn(
-        "fixed right-0 top-0 h-screen z-50 flex flex-col bg-card border-l border-border shadow-2xl transition-transform duration-300",
-        "w-full sm:w-80",
-        open ? "translate-x-0" : "translate-x-full"
-      )}>
+      <div
+        className={cn(
+          "fixed right-0 top-0 h-screen z-50 flex flex-col bg-card border-l border-border shadow-2xl transition-transform duration-300",
+          "w-full sm:w-80",
+          open ? "translate-x-0" : "translate-x-full"
+        )}
+        style={{ paddingRight: 'var(--sar)' }}
+      >
         {/* Header */}
         <div className="bg-sidebar h-11 flex items-center justify-between px-4 flex-shrink-0">
           <span className="text-sm font-bold text-sidebar-foreground">Team Chat</span>

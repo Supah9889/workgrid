@@ -1,4 +1,4 @@
-import React, { createContext, useState, useContext, useEffect } from 'react';
+import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
@@ -14,6 +14,7 @@ export const AuthProvider = ({ children }) => {
   const [authChecked, setAuthChecked] = useState(false);
   const [appPublicSettings, setAppPublicSettings] = useState(null);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
+  const onboardingComplete = useRef(false);
 
   useEffect(() => {
     checkAppState();
@@ -70,9 +71,29 @@ export const AuthProvider = ({ children }) => {
   };
 
   const checkUserAuth = async () => {
+    // Belt-and-suspenders: if sessionStorage flag is set, onboarding just
+    // completed — trust local state entirely and skip the DB re-fetch.
+    const justOnboarded = sessionStorage.getItem('onboarding_complete');
+    if (justOnboarded) {
+      sessionStorage.removeItem('onboarding_complete');
+      setNeedsOnboarding(false);
+      setIsLoadingAuth(false);
+      setAuthChecked(true);
+      return;
+    }
+
     try {
       setIsLoadingAuth(true);
       const authUser = await base44.auth.me();
+
+      // Ref guard: onboarding just completed in this session — skip DB re-fetch
+      // to prevent a stale cached response from resetting needsOnboarding.
+      if (onboardingComplete.current) {
+        setNeedsOnboarding(false);
+        setIsLoadingAuth(false);
+        setAuthChecked(true);
+        return;
+      }
 
       // Fetch the app's custom User entity to get role and onboarding status
       let userEntity = null;
@@ -116,8 +137,8 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  // Called immediately after onboarding save succeeds — avoids re-fetch race condition
   const completeOnboarding = (updatedUserFields = {}) => {
+    onboardingComplete.current = true;
     setNeedsOnboarding(false);
     setUser(prev => prev ? { ...prev, has_onboarded: true, ...updatedUserFields } : prev);
   };

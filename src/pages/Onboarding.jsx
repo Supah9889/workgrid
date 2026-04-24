@@ -89,16 +89,13 @@ export default function Onboarding() {
         pin_hash: pinHash,
         has_onboarded: true,
       });
-
-      // Immediately mark onboarding complete in context — no re-fetch race condition
+      sessionStorage.setItem('onboarding_complete', 'true');
       completeOnboarding({ full_name: trimmedName, contact_phone: trimmedPhone, pin_hash: pinHash });
-
       setStep(4);
       setTimeout(() => {
         setVisible(false);
-        // Short delay for fade-out, then navigate
-        setTimeout(() => navigate('/'), 400);
-      }, 2000);
+        navigate('/');
+      }, 1500);
     } catch (e) {
       console.error('[Onboarding] Save failed:', e);
       const msg = e?.message?.toLowerCase().includes('network') || e?.message?.toLowerCase().includes('fetch')

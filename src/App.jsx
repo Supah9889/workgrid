@@ -48,8 +48,10 @@ const AuthenticatedApp = () => {
     if (authError.type === 'auth_required') { navigateToLogin(); return null; }
   }
 
-  // Only redirect to onboarding if has_onboarded is explicitly false (not just falsy/undefined)
-  if (needsOnboarding && user?.has_onboarded === false && location.pathname !== '/onboarding') {
+  if (needsOnboarding &&
+      user?.has_onboarded === false &&
+      location.pathname !== '/onboarding' &&
+      !sessionStorage.getItem('onboarding_complete')) {
     return <Navigate to="/onboarding" replace />;
   }
 

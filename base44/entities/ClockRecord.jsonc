@@ -10,16 +10,6 @@
       "type": "string",
       "description": "Name of the employee"
     },
-    "clock_in": {
-      "type": "string",
-      "format": "date-time",
-      "description": "Clock in timestamp"
-    },
-    "clock_out": {
-      "type": "string",
-      "format": "date-time",
-      "description": "Clock out timestamp"
-    },
     "date": {
       "type": "string",
       "format": "date",

@@ -1,19 +1,26 @@
 import { useState, useEffect, useRef } from 'react';
 import { base44 } from '@/api/base44Client';
 import { Button } from '@/components/ui/button';
+import { useToast } from '@/components/ui/use-toast';
 import { Send } from 'lucide-react';
 import MessageBubble from './MessageBubble';
 
 export default function GeneralChat({ user, markAsRead }) {
+  const { toast } = useToast();
   const [messages, setMessages] = useState([]);
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const bottomRef = useRef(null);
 
   const loadMessages = async () => {
-    const msgs = await base44.entities.ChatMessage.filter({ chat_type: 'general' }, 'created_date', 100);
-    setMessages(msgs);
-    markAsRead?.(msgs);
+    try {
+      const msgs = await base44.entities.ChatMessage.filter({ chat_type: 'general' }, 'created_date', 100);
+      setMessages(msgs);
+      markAsRead?.(msgs);
+    } catch (err) {
+      console.error('[GeneralChat] Message load failed:', err);
+      toast({ title: 'Could not load chat', description: 'Check your connection and try again.', variant: 'destructive' });
+    }
   };
 
   useEffect(() => {
@@ -33,17 +40,24 @@ export default function GeneralChat({ user, markAsRead }) {
   const handleSend = async () => {
     if (!text.trim() || sending) return;
     setSending(true);
-    await base44.entities.ChatMessage.create({
-      message_text: text.trim(),
-      sender_email: user.email,
-      sender_name: user.full_name || user.email,
-      sender_role: user.role || 'employee',
-      chat_type: 'general',
-      conversation_id: null,
-      read_by: [user.email],
-    });
-    setText('');
-    setSending(false);
+    try {
+      await base44.entities.ChatMessage.create({
+        message_text: text.trim(),
+        sender_email: user.email,
+        sender_name: user.full_name || user.email,
+        sender_role: user.role || 'employee',
+        chat_type: 'general',
+        conversation_id: null,
+        participant_emails: [],
+        read_by: [user.email],
+      });
+      setText('');
+    } catch (err) {
+      console.error('[GeneralChat] Send failed:', err);
+      toast({ title: 'Message not sent', description: err.message || 'Check your connection and try again.', variant: 'destructive' });
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleKeyDown = (e) => {

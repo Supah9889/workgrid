@@ -11,6 +11,10 @@ const CATEGORY_CONFIG = {
   clock:  { icon: Clock,         border: 'border-l-yellow-500', iconCls: 'text-yellow-400', bg: 'bg-yellow-500/10' },
   alert:  { icon: AlertTriangle, border: 'border-l-red-500',    iconCls: 'text-red-400',    bg: 'bg-red-500/10'    },
   chat:   { icon: MessageSquare, border: 'border-l-green-500',  iconCls: 'text-green-400',  bg: 'bg-green-500/10'  },
+  info:   { icon: Settings,      border: 'border-l-slate-400',  iconCls: 'text-slate-400',  bg: 'bg-slate-500/10'  },
+  success:{ icon: Package,       border: 'border-l-emerald-500', iconCls: 'text-emerald-400', bg: 'bg-emerald-500/10' },
+  warning:{ icon: AlertTriangle, border: 'border-l-yellow-500', iconCls: 'text-yellow-400', bg: 'bg-yellow-500/10' },
+  error:  { icon: AlertTriangle, border: 'border-l-red-500',    iconCls: 'text-red-400',    bg: 'bg-red-500/10'    },
   system: { icon: Settings,      border: 'border-l-slate-400',  iconCls: 'text-slate-400',  bg: 'bg-slate-500/10'  },
 };
 
@@ -140,7 +144,7 @@ export default function NotificationCenter() {
               </div>
             ) : (
               displayed.map(n => {
-                const cfg = CATEGORY_CONFIG[n.category] || CATEGORY_CONFIG.system;
+                const cfg = CATEGORY_CONFIG[n.type] || CATEGORY_CONFIG.system;
                 const Icon = cfg.icon;
                 return (
                   <div

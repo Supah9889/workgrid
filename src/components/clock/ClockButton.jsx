@@ -105,7 +105,7 @@ export default function ClockButton({ user }) {
     if (!navigator.geolocation) return;
     const push = () => {
       navigator.geolocation.getCurrentPosition(pos => {
-        base44.entities.LocationRecord.filter({ employee_email: user.email }).then(existing => {
+        base44.entities.LocationRecord.filter({ employee_email: user.email }).then(async existing => {
           const data = {
             employee_email: user.email,
             employee_name: user.full_name || user.email,
@@ -114,8 +114,10 @@ export default function ClockButton({ user }) {
             updated_at: new Date().toISOString(),
             clock_record_id: recordId,
           };
-          if (existing.length > 0) base44.entities.LocationRecord.update(existing[0].id, data);
-          else base44.entities.LocationRecord.create(data);
+          if (existing.length > 0) await base44.entities.LocationRecord.update(existing[0].id, data);
+          else await base44.entities.LocationRecord.create(data);
+        }).catch(err => {
+          console.warn('[ClockButton] Live location update failed:', err);
         });
       });
     };
@@ -125,9 +127,9 @@ export default function ClockButton({ user }) {
 
   const stopLocationTracking = () => {
     if (locationIntervalRef.current) clearInterval(locationIntervalRef.current);
-    base44.entities.LocationRecord.filter({ employee_email: user.email }).then(recs =>
-      recs.forEach(r => base44.entities.LocationRecord.delete(r.id))
-    );
+    base44.entities.LocationRecord.filter({ employee_email: user.email })
+      .then(recs => Promise.all(recs.map(r => base44.entities.LocationRecord.delete(r.id))))
+      .catch(err => console.warn('[ClockButton] Live location cleanup failed:', err));
   };
 
   const checkGeofence = (lat, lng) => {

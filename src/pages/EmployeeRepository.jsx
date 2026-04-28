@@ -56,10 +56,10 @@ function EmployeeCard({ emp, isClockedIn, onViewProfile }) {
           <Mail className="w-3 h-3 flex-shrink-0" />
           <span className="truncate">{emp.email}</span>
         </div>
-        {emp.phone && (
+        {emp.contact_phone && (
           <div className="flex items-center gap-2 text-xs text-muted-foreground">
             <Phone className="w-3 h-3 flex-shrink-0" />
-            <span>{emp.phone}</span>
+            <span>{emp.contact_phone}</span>
           </div>
         )}
       </div>
@@ -138,7 +138,7 @@ export default function EmployeeRepository() {
           <h1 className="text-2xl font-bold tracking-tight">Employee Directory</h1>
           <p className="text-sm text-muted-foreground mt-0.5">{users.length} team members</p>
         </div>
-        {user?.role === 'super_admin' && (
+        {(user?.role === 'owner' || user?.role === 'super_admin') && (
           <Button onClick={() => setShowAddDialog(true)} className="gap-2">
             <Plus className="w-4 h-4" /> Add Employee
           </Button>

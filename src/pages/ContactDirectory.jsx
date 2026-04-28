@@ -7,8 +7,9 @@ import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { Pencil, Phone, Mail, Shield, Loader2, X, Check } from 'lucide-react';
 
-const ROLE_LABELS = { super_admin: 'Admin', operator: 'Operator', employee: 'Employee' };
+const ROLE_LABELS = { owner: 'Owner', super_admin: 'Admin', operator: 'Operator', employee: 'Employee' };
 const ROLE_COLORS = {
+  owner: 'bg-emerald-100 text-emerald-700',
   super_admin: 'bg-purple-100 text-purple-700',
   operator: 'bg-blue-100 text-blue-700',
   employee: 'bg-slate-100 text-slate-600',
@@ -118,7 +119,8 @@ export default function ContactDirectory() {
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
 
-  const isAdmin = user?.role === 'super_admin' || user?.role === 'operator';
+  const canViewDirectory = ['owner', 'super_admin', 'operator'].includes(user?.role);
+  const canManageDirectory = ['owner', 'super_admin'].includes(user?.role);
 
   const { data: allUsers = [], isLoading, isError } = useQuery({
     queryKey: ['contact-directory-users'],
@@ -126,7 +128,7 @@ export default function ContactDirectory() {
   });
 
   // Employees see only themselves; admins see all active users
-  const visible = isAdmin
+  const visible = canViewDirectory
     ? allUsers.filter(u => u.status !== 'inactive')
     : allUsers.filter(u => u.email === user?.email);
 
@@ -160,11 +162,15 @@ export default function ContactDirectory() {
       <div>
         <h1 className="text-2xl font-bold tracking-tight">Contact Directory</h1>
         <p className="text-muted-foreground text-sm mt-0.5">
-          {isAdmin ? 'Manage contact information for alerts and notifications.' : 'Your contact information for alerts.'}
+          {canManageDirectory
+            ? 'Manage contact information for alerts and notifications.'
+            : canViewDirectory
+              ? 'Team contact information for operations.'
+              : 'Your contact information for alerts.'}
         </p>
       </div>
 
-      {isAdmin && (
+      {canViewDirectory && (
         <Input
           placeholder="Search by name or email..."
           value={search}
@@ -191,7 +197,7 @@ export default function ContactDirectory() {
               <ContactCard
                 key={person.id}
                 person={person}
-                canEdit={isAdmin || person.email === user?.email}
+                canEdit={canManageDirectory || person.email === user?.email}
                 onSave={handleSave}
               />
             ))
@@ -199,7 +205,7 @@ export default function ContactDirectory() {
         </div>
       )}
 
-      {isAdmin && (
+      {canManageDirectory && (
         <div className="flex items-center gap-2 text-xs text-muted-foreground p-3 rounded-lg bg-muted/40">
           <Shield className="w-3.5 h-3.5" />
           Admins and operators with contact info on file will receive out-of-bounds punch alerts.

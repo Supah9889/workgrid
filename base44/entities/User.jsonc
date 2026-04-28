@@ -33,5 +33,44 @@
     "contact_email": {
       "type": "string"
     }
+  },
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "$and": [
+            { "data.email": "{{user.email}}" },
+            { "data.role": "employee" }
+          ]
+        },
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "data.role": { "$in": ["owner", "super_admin"] } } }
+      ]
+    },
+    "read": {
+      "$or": [
+        { "data.email": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "data.role": { "$in": ["owner", "super_admin", "operator"] } } }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "$and": [
+            { "data.email": "{{user.email}}" },
+            { "data.role": "employee" }
+          ]
+        },
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "data.role": { "$in": ["owner", "super_admin"] } } }
+      ]
+    },
+    "delete": {
+      "$or": [
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "data.role": { "$in": ["owner", "super_admin"] } } }
+      ]
+    }
   }
 }

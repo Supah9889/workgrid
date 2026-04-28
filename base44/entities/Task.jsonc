@@ -108,5 +108,33 @@
   },
   "required": [
     "title"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "data.role": { "$in": ["owner", "super_admin", "operator"] } } }
+      ]
+    },
+    "read": {
+      "$or": [
+        { "data.assigned_employee": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "data.role": { "$in": ["owner", "super_admin", "operator"] } } }
+      ]
+    },
+    "update": {
+      "$or": [
+        { "data.assigned_employee": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "data.role": { "$in": ["owner", "super_admin", "operator"] } } }
+      ]
+    },
+    "delete": {
+      "$or": [
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "data.role": { "$in": ["owner", "super_admin"] } } }
+      ]
+    }
+  }
 }

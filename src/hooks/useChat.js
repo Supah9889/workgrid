@@ -17,13 +17,23 @@ export function useChat(user) {
     ).length;
     setGeneralUnread(unreadGeneral);
 
-    // Count private messages not read by this user
-    const privateMsgs = await base44.entities.ChatMessage.filter({ chat_type: 'private' });
-    const unreadPrivate = privateMsgs.filter(
-      m => m.sender_email !== user.email && !(m.read_by || []).includes(user.email)
-    ).length;
+    // Count private unread only in conversations visible to this user under RLS.
+    const conversations = await base44.entities.Conversation.list('-last_message_at');
+    let unreadPrivate = 0;
+    for (const conv of conversations) {
+      const isParticipant = (conv.participant_emails || []).includes(user.email);
+      const isAdmin = ['owner', 'super_admin', 'operator'].includes(user.role);
+      if (!isParticipant && !isAdmin) continue;
+      const msgs = await base44.entities.ChatMessage.filter({
+        chat_type: 'private',
+        conversation_id: conv.id,
+      });
+      unreadPrivate += msgs.filter(
+        m => m.sender_email !== user.email && !(m.read_by || []).includes(user.email)
+      ).length;
+    }
     setPrivateUnread(unreadPrivate);
-  }, [user?.email]);
+  }, [user?.email, user?.role]);
 
   useEffect(() => {
     if (!user?.email) return;
@@ -36,6 +46,16 @@ export function useChat(user) {
 
   const sendMessage = useCallback(async ({ messageText, chatType = 'general', conversationId = null }) => {
     if (!user || !messageText.trim()) return;
+    let participantEmails = [];
+    if (chatType === 'private' && conversationId) {
+      try {
+        const conversations = await base44.entities.Conversation.list('-last_message_at');
+        const conversation = conversations.find(c => c.id === conversationId);
+        participantEmails = conversation?.participant_emails || [user.email];
+      } catch {
+        participantEmails = [user.email];
+      }
+    }
     const msg = await base44.entities.ChatMessage.create({
       message_text: messageText.trim(),
       sender_email: user.email,
@@ -43,6 +63,7 @@ export function useChat(user) {
       sender_role: user.role || 'employee',
       chat_type: chatType,
       conversation_id: conversationId,
+      participant_emails: participantEmails,
       read_by: [user.email],
     });
     // If private conversation, update last_message on conversation

@@ -20,7 +20,11 @@
         "info",
         "warning",
         "error",
-        "success"
+        "success",
+        "task",
+        "alert",
+        "clock",
+        "chat"
       ],
       "default": "info"
     },
@@ -37,5 +41,35 @@
     "recipient_email",
     "title",
     "message"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        { "data.recipient_email": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "data.role": { "$in": ["owner", "super_admin", "operator", "employee"] } } }
+      ]
+    },
+    "read": {
+      "$or": [
+        { "data.recipient_email": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "data.role": { "$in": ["owner", "super_admin"] } } }
+      ]
+    },
+    "update": {
+      "$or": [
+        { "data.recipient_email": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "data.role": { "$in": ["owner", "super_admin"] } } }
+      ]
+    },
+    "delete": {
+      "$or": [
+        { "data.recipient_email": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "data.role": { "$in": ["owner", "super_admin"] } } }
+      ]
+    }
+  }
 }

@@ -32,5 +32,35 @@
     "employee_email",
     "latitude",
     "longitude"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        { "data.employee_email": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "data.role": { "$in": ["owner", "super_admin", "operator"] } } }
+      ]
+    },
+    "read": {
+      "$or": [
+        { "data.employee_email": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "data.role": { "$in": ["owner", "super_admin", "operator"] } } }
+      ]
+    },
+    "update": {
+      "$or": [
+        { "data.employee_email": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "data.role": { "$in": ["owner", "super_admin"] } } }
+      ]
+    },
+    "delete": {
+      "$or": [
+        { "data.employee_email": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "data.role": { "$in": ["owner", "super_admin"] } } }
+      ]
+    }
+  }
 }

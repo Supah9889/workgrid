@@ -37,5 +37,34 @@
   "required": [
     "participant_emails",
     "created_by"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        { "data.created_by": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "data.role": { "$in": ["owner", "super_admin", "operator"] } } }
+      ]
+    },
+    "read": {
+      "$or": [
+        { "data.participant_emails": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "data.role": { "$in": ["owner", "super_admin", "operator"] } } }
+      ]
+    },
+    "update": {
+      "$or": [
+        { "data.participant_emails": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "data.role": { "$in": ["owner", "super_admin", "operator"] } } }
+      ]
+    },
+    "delete": {
+      "$or": [
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "data.role": { "$in": ["owner", "super_admin"] } } }
+      ]
+    }
+  }
 }

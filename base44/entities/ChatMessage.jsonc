@@ -38,6 +38,13 @@
       },
       "description": "Array of emails who have read this message",
       "default": []
+    },
+    "participant_emails": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "description": "Conversation participants copied onto private messages for RLS"
     }
   },
   "required": [
@@ -45,5 +52,39 @@
     "sender_email",
     "sender_name",
     "chat_type"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        { "data.sender_email": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "data.role": { "$in": ["owner", "super_admin", "operator"] } } }
+      ]
+    },
+    "read": {
+      "$or": [
+        { "data.chat_type": "general" },
+        { "data.sender_email": "{{user.email}}" },
+        { "data.participant_emails": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "data.role": { "$in": ["owner", "super_admin", "operator"] } } }
+      ]
+    },
+    "update": {
+      "$or": [
+        { "data.chat_type": "general" },
+        { "data.sender_email": "{{user.email}}" },
+        { "data.participant_emails": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "data.role": { "$in": ["owner", "super_admin", "operator"] } } }
+      ]
+    },
+    "delete": {
+      "$or": [
+        { "data.sender_email": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "data.role": { "$in": ["owner", "super_admin"] } } }
+      ]
+    }
+  }
 }

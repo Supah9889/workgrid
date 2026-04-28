@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { base44 } from '@/api/base44Client';
+import { useAuth } from '@/lib/AuthContext';
 
 const PermissionsContext = createContext(null);
 
@@ -93,35 +94,54 @@ export function can(userEmail, userRole, permissionKey, userPermissionsMap, perm
 }
 
 export function PermissionsProvider({ children }) {
+  const { user } = useAuth();
   const [permissionsByRole, setPermissionsByRole] = useState({ operator: null, employee: null });
   const [userPermissions, setUserPermissions] = useState({});
   const [loading, setLoading] = useState(true);
 
   const fetchPermissions = useCallback(async () => {
-    const records = await base44.entities.RolePermission.list();
-    const result = { operator: null, employee: null };
-    for (const role of ['operator', 'employee']) {
-      const found = records.find(r => r.role === role);
-      if (found) {
-        result[role] = found;
-      } else {
-        const created = await base44.entities.RolePermission.create({ role, ...DEFAULT_PERMISSIONS[role] });
-        result[role] = created;
+    setLoading(true);
+    const isAdmin = user?.role === 'owner' || user?.role === 'super_admin';
+    const result = { operator: DEFAULT_PERMISSIONS.operator, employee: DEFAULT_PERMISSIONS.employee };
+
+    try {
+      const records = await base44.entities.RolePermission.list();
+      for (const role of ['operator', 'employee']) {
+        const found = records.find(r => r.role === role);
+        if (found) {
+          result[role] = found;
+        } else if (isAdmin) {
+          const created = await base44.entities.RolePermission.create({ role, ...DEFAULT_PERMISSIONS[role] });
+          result[role] = created;
+        }
       }
+    } catch (err) {
+      console.warn('[permissions] Could not load role permissions; using code defaults:', err);
     }
     setPermissionsByRole(result);
 
     try {
-      const userPerms = await base44.entities.UserPermission.list();
+      const userPerms = isAdmin
+        ? await base44.entities.UserPermission.list()
+        : user?.email
+          ? await base44.entities.UserPermission.filter({ user_email: user.email })
+          : [];
       const map = {};
       userPerms.forEach(p => { map[p.user_email] = p; });
       setUserPermissions(map);
-    } catch { /* UserPermission entity may not exist yet */ }
+    } catch (err) {
+      console.warn('[permissions] Could not load user permissions:', err);
+      setUserPermissions({});
+    }
 
     setLoading(false);
-  }, []);
+  }, [user?.email, user?.role]);
 
   useEffect(() => {
+    if (!user?.email) {
+      setLoading(false);
+      return;
+    }
     fetchPermissions();
 
     const unsubRole = base44.entities.RolePermission.subscribe((event) => {
@@ -145,7 +165,7 @@ export function PermissionsProvider({ children }) {
     } catch { /* ignore */ }
 
     return () => { unsubRole(); unsubUser(); };
-  }, [fetchPermissions]);
+  }, [fetchPermissions, user?.email]);
 
   return (
     <PermissionsContext.Provider value={{

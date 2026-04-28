@@ -4,9 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Send, Plus, MessageSquare } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { useToast } from '@/components/ui/use-toast';
 import MessageBubble from './MessageBubble';
 
 export default function PrivateChat({ user, markAsRead }) {
+  const { toast } = useToast();
   const [conversations, setConversations] = useState([]);
   const [activeConvId, setActiveConvId] = useState(null);
   const [messages, setMessages] = useState([]);
@@ -16,21 +18,40 @@ export default function PrivateChat({ user, markAsRead }) {
   const [showNewDialog, setShowNewDialog] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState('');
   const bottomRef = useRef(null);
+  const activeConvIdRef = useRef(null);
 
-  const canCreateConversation = user?.role === 'super_admin' || user?.role === 'operator';
+  const isPrivileged = ['owner', 'super_admin', 'operator'].includes(user?.role);
+  const canCreateConversation = isPrivileged;
 
   const loadConversations = async () => {
-    const all = await base44.entities.Conversation.list('-last_message_at');
-    const visible = user?.role === 'super_admin'
+    try {
+      const all = await base44.entities.Conversation.list('-last_message_at');
+      const visible = isPrivileged
       ? all
       : all.filter(c => (c.participant_emails || []).includes(user?.email));
-    setConversations(visible);
+      setConversations(visible);
+    } catch (err) {
+      console.error('[PrivateChat] Conversation load failed:', err);
+      toast({ title: 'Could not load private chats', description: 'Check your access or try again.', variant: 'destructive' });
+    }
   };
 
   const loadMessages = async (convId) => {
-    const msgs = await base44.entities.ChatMessage.filter({ chat_type: 'private', conversation_id: convId }, 'created_date', 100);
-    setMessages(msgs);
-    markAsRead?.(msgs);
+    const conv = conversations.find(c => c.id === convId);
+    const allowed = isPrivileged || (conv?.participant_emails || []).includes(user?.email);
+    if (conv && !allowed) {
+      setMessages([]);
+      toast({ title: 'Private chat unavailable', description: 'You do not have access to this conversation.', variant: 'destructive' });
+      return;
+    }
+    try {
+      const msgs = await base44.entities.ChatMessage.filter({ chat_type: 'private', conversation_id: convId }, 'created_date', 100);
+      setMessages(msgs);
+      markAsRead?.(msgs);
+    } catch (err) {
+      console.error('[PrivateChat] Message load failed:', err);
+      toast({ title: 'Could not load messages', description: 'Check your access or try again.', variant: 'destructive' });
+    }
   };
 
   useEffect(() => {
@@ -40,14 +61,16 @@ export default function PrivateChat({ user, markAsRead }) {
     );
     const unsub = base44.entities.Conversation.subscribe(loadConversations);
     const msgUnsub = base44.entities.ChatMessage.subscribe((event) => {
-      if (event.data?.chat_type === 'private' && event.data?.conversation_id === activeConvId) {
-        loadMessages(activeConvId);
+      const currentConvId = activeConvIdRef.current;
+      if (event.data?.chat_type === 'private' && event.data?.conversation_id === currentConvId) {
+        loadMessages(currentConvId);
       }
     });
     return () => { unsub(); msgUnsub(); };
-  }, []);
+  }, [user?.email, user?.role]);
 
   useEffect(() => {
+    activeConvIdRef.current = activeConvId;
     if (activeConvId) loadMessages(activeConvId);
   }, [activeConvId]);
 
@@ -58,21 +81,29 @@ export default function PrivateChat({ user, markAsRead }) {
   const handleSend = async () => {
     if (!text.trim() || sending || !activeConvId) return;
     setSending(true);
-    await base44.entities.ChatMessage.create({
-      message_text: text.trim(),
-      sender_email: user.email,
-      sender_name: user.full_name || user.email,
-      sender_role: user.role || 'employee',
-      chat_type: 'private',
-      conversation_id: activeConvId,
-      read_by: [user.email],
-    });
-    await base44.entities.Conversation.update(activeConvId, {
-      last_message: text.trim().slice(0, 80),
-      last_message_at: new Date().toISOString(),
-    });
-    setText('');
-    setSending(false);
+    const conv = conversations.find(c => c.id === activeConvId);
+    try {
+      await base44.entities.ChatMessage.create({
+        message_text: text.trim(),
+        sender_email: user.email,
+        sender_name: user.full_name || user.email,
+        sender_role: user.role || 'employee',
+        chat_type: 'private',
+        conversation_id: activeConvId,
+        participant_emails: conv?.participant_emails || [user.email],
+        read_by: [user.email],
+      });
+      await base44.entities.Conversation.update(activeConvId, {
+        last_message: text.trim().slice(0, 80),
+        last_message_at: new Date().toISOString(),
+      });
+      setText('');
+    } catch (err) {
+      console.error('[PrivateChat] Send failed:', err);
+      toast({ title: 'Message not sent', description: err.message || 'Check your access or connection and try again.', variant: 'destructive' });
+    } finally {
+      setSending(false);
+    }
   };
 
   const handleKeyDown = (e) => {
@@ -85,17 +116,22 @@ export default function PrivateChat({ user, markAsRead }) {
   const handleCreateConversation = async () => {
     if (!selectedEmployee) return;
     const emp = employees.find(e => e.email === selectedEmployee);
-    const conv = await base44.entities.Conversation.create({
-      participant_emails: [user.email, selectedEmployee],
-      participant_names: [user.full_name || user.email, emp?.full_name || selectedEmployee],
-      created_by: user.email,
-      last_message: '',
-      last_message_at: new Date().toISOString(),
-    });
-    await loadConversations();
-    setActiveConvId(conv.id);
-    setShowNewDialog(false);
-    setSelectedEmployee('');
+    try {
+      const conv = await base44.entities.Conversation.create({
+        participant_emails: [user.email, selectedEmployee],
+        participant_names: [user.full_name || user.email, emp?.full_name || selectedEmployee],
+        created_by: user.email,
+        last_message: '',
+        last_message_at: new Date().toISOString(),
+      });
+      await loadConversations();
+      setActiveConvId(conv.id);
+      setShowNewDialog(false);
+      setSelectedEmployee('');
+    } catch (err) {
+      console.error('[PrivateChat] Create conversation failed:', err);
+      toast({ title: 'Could not start chat', description: err.message || 'Check your access and try again.', variant: 'destructive' });
+    }
   };
 
   const activeConv = conversations.find(c => c.id === activeConvId);

@@ -9,8 +9,12 @@ function isAdminRole(role) {
   return role === 'owner' || role === 'super_admin' || role === 'operator';
 }
 
+function normalizeEmail(email) {
+  return (email || '').toLowerCase();
+}
+
 function isEmployeeSetupRecord(record, email) {
-  return record?.email === email && (!record.role || record.role === 'employee');
+  return normalizeEmail(record?.email) === normalizeEmail(email) && (!record.role || record.role === 'employee');
 }
 
 function pickBestUserRecord(records = []) {
@@ -29,7 +33,8 @@ function pickBestUserRecord(records = []) {
 
 function pickOnboardingTarget(records = [], email) {
   const ownEmployeeRecords = records.filter(r => isEmployeeSetupRecord(r, email));
-  return pickBestUserRecord(ownEmployeeRecords) || pickBestUserRecord(records.filter(r => r.email === email));
+  const normalizedEmail = normalizeEmail(email);
+  return pickBestUserRecord(ownEmployeeRecords) || pickBestUserRecord(records.filter(r => normalizeEmail(r.email) === normalizedEmail));
 }
 
 function getErrorInfo(error) {
@@ -40,9 +45,10 @@ function getErrorInfo(error) {
 }
 
 function assertOwnEmployeeCreatePayload(payload, authEmail) {
-  if (!authEmail || payload.email !== authEmail) {
+  const normalizedEmail = normalizeEmail(authEmail);
+  if (!normalizedEmail || normalizeEmail(payload.email) !== normalizedEmail) {
     console.error('[AuthContext] Refusing User.create due to email mismatch.', {
-      authEmail,
+      authEmail: normalizedEmail,
       payloadEmail: payload.email,
     });
     throw new Error('User create email mismatch.');
@@ -72,10 +78,11 @@ export const AuthProvider = ({ children }) => {
   }, []);
 
   const loadUserEntity = async (authUser) => {
-    const results = await base44.entities.User.filter({ email: authUser.email });
+    const normalizedEmail = normalizeEmail(authUser.email);
+    const results = await base44.entities.User.filter({ email: normalizedEmail });
     if (results?.length > 1) {
       console.warn('[AuthContext] Duplicate User records found for email; using best match.', {
-        email: authUser.email,
+        email: normalizedEmail,
         count: results.length,
         ids: results.map(r => r.id),
       });
@@ -83,20 +90,20 @@ export const AuthProvider = ({ children }) => {
 
     let userEntity = pickBestUserRecord(results);
     if (!userEntity) {
-      console.info('[AuthContext] Creating first-time employee User record.', { email: authUser.email });
+      console.info('[AuthContext] Creating first-time employee User record.', { email: normalizedEmail });
       const firstTimePayload = {
-        email: authUser.email,
+        email: normalizedEmail,
         role: 'employee',
         status: 'active',
         has_onboarded: false,
       };
       try {
-        assertOwnEmployeeCreatePayload(firstTimePayload, authUser.email);
+        assertOwnEmployeeCreatePayload(firstTimePayload, normalizedEmail);
         userEntity = await base44.entities.User.create(firstTimePayload);
       } catch (error) {
         const info = getErrorInfo(error);
         console.error('User.create failed', {
-          email: authUser.email,
+          email: normalizedEmail,
           error: {
             status: info.status,
             message: info.message,
@@ -191,7 +198,7 @@ export const AuthProvider = ({ children }) => {
         userEntity = await loadUserEntity(authUser);
       } catch (entityError) {
         console.error('Failed to fetch/create User entity:', entityError);
-        userEntity = { email: authUser.email, role: 'employee', has_onboarded: false };
+        userEntity = { email: normalizeEmail(authUser.email), role: 'employee', has_onboarded: false };
       }
 
       applyAuthUser(authUser, userEntity);
@@ -217,20 +224,21 @@ export const AuthProvider = ({ children }) => {
 
   const saveOnboardingProfile = async ({ fullName, contactPhone, pinHash }) => {
     const authUser = await base44.auth.me();
-    const records = await base44.entities.User.filter({ email: authUser.email });
+    const normalizedEmail = normalizeEmail(authUser.email);
+    const records = await base44.entities.User.filter({ email: normalizedEmail });
 
     if (records?.length > 1) {
       console.warn('[AuthContext] Duplicate User records during onboarding save.', {
-        email: authUser.email,
+        email: normalizedEmail,
         count: records.length,
         ids: records.map(r => r.id),
       });
     }
 
-    const existing = pickOnboardingTarget(records, authUser.email);
-    const canUpdateExisting = isEmployeeSetupRecord(existing, authUser.email);
+    const existing = pickOnboardingTarget(records, normalizedEmail);
+    const canUpdateExisting = isEmployeeSetupRecord(existing, normalizedEmail);
     const selfSetupPayload = {
-      email: authUser.email,
+      email: normalizedEmail,
       full_name: fullName,
       contact_phone: contactPhone,
       pin_hash: pinHash,
@@ -239,7 +247,7 @@ export const AuthProvider = ({ children }) => {
     };
 
     console.info('[AuthContext] Saving onboarding profile.', {
-      email: authUser.email,
+      email: normalizedEmail,
       userId: existing?.id || null,
       role: 'employee',
       hasExistingRecord: !!existing,
@@ -253,14 +261,14 @@ export const AuthProvider = ({ children }) => {
       } catch (error) {
         const info = getErrorInfo(error);
         console.error('[AuthContext] Onboarding User.update failed.', {
-          email: authUser.email,
+          email: normalizedEmail,
           targetUserId: existing.id,
           mode: 'update',
           status: info.status,
           message: info.message,
         });
 
-        const hasOtherUsableRecord = records.some(r => r.id !== existing.id && isEmployeeSetupRecord(r, authUser.email));
+        const hasOtherUsableRecord = records.some(r => r.id !== existing.id && isEmployeeSetupRecord(r, normalizedEmail));
         if (hasOtherUsableRecord) throw error;
       }
     }
@@ -271,19 +279,19 @@ export const AuthProvider = ({ children }) => {
         status: 'active',
       };
       try {
-        assertOwnEmployeeCreatePayload(createPayload, authUser.email);
+        assertOwnEmployeeCreatePayload(createPayload, normalizedEmail);
         saved = await base44.entities.User.create(createPayload);
       } catch (error) {
         const info = getErrorInfo(error);
         console.error('User.create failed', {
-          email: authUser.email,
+          email: normalizedEmail,
           error: {
             status: info.status,
             message: info.message,
           },
         });
         console.error('[AuthContext] Onboarding User.create failed.', {
-          email: authUser.email,
+          email: normalizedEmail,
           targetUserId: null,
           mode: 'create',
           status: info.status,
@@ -295,7 +303,7 @@ export const AuthProvider = ({ children }) => {
 
     if (saved?.has_onboarded !== true || !saved?.pin_hash) {
       console.error('[AuthContext] Onboarding save returned incomplete User record.', {
-        email: authUser.email,
+        email: normalizedEmail,
         targetUserId: saved?.id || null,
         hasOnboarded: saved?.has_onboarded,
         hasPin: !!saved?.pin_hash,
@@ -313,7 +321,7 @@ export const AuthProvider = ({ children }) => {
     const reloaded = await reloadCurrentUser();
     if (reloaded?.has_onboarded !== true || !reloaded?.pin_hash) {
       console.error('[AuthContext] Reloaded User is still incomplete after onboarding save.', {
-        email: authUser.email,
+        email: normalizedEmail,
         targetUserId: reloaded?.id || null,
         hasOnboarded: reloaded?.has_onboarded,
         hasPin: !!reloaded?.pin_hash,

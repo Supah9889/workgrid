@@ -213,16 +213,6 @@ export const AuthProvider = ({ children }) => {
     const authUser = await base44.auth.me();
     const normalizedEmail = normalizeEmail(authUser.email);
 
-    let records = [];
-    try {
-      records = await base44.entities.EmployeeProfile.filter({ email: normalizedEmail });
-    } catch (err) {
-      console.warn('[AuthContext] EmployeeProfile.filter failed during onboarding:', err);
-    }
-
-    const existing = pickOnboardingTarget(records, normalizedEmail);
-    const canUpdateExisting = existing && isEmployeeSetupRecord(existing, normalizedEmail);
-
     const profilePayload = {
       email: normalizedEmail,
       full_name: fullName,
@@ -233,60 +223,27 @@ export const AuthProvider = ({ children }) => {
       status: 'active',
     };
 
-    console.info('[AuthContext] Saving onboarding EmployeeProfile.', {
-      email: normalizedEmail,
-      profileId: existing?.id || null,
-      mode: canUpdateExisting ? 'update' : 'create',
-    });
-
-    let saved = null;
-
-    if (canUpdateExisting && existing?.id) {
-      try {
-        saved = await base44.entities.EmployeeProfile.update(existing.id, profilePayload);
-      } catch (error) {
-        const info = getErrorInfo(error);
-        console.error('[AuthContext] EmployeeProfile.update failed.', {
-          email: normalizedEmail,
-          status: info.status,
-          message: info.message,
-        });
-        // Fall through to create
-      }
+    // Find existing profile for this email
+    let existing = null;
+    try {
+      const records = await base44.entities.EmployeeProfile.filter({ email: normalizedEmail });
+      existing = records?.[0] || null;
+    } catch (err) {
+      console.warn('[AuthContext] EmployeeProfile.filter failed during onboarding:', err);
     }
 
-    if (!saved) {
-      try {
-        saved = await base44.entities.EmployeeProfile.create(profilePayload);
-      } catch (error) {
-        const info = getErrorInfo(error);
-        console.error('[AuthContext] EmployeeProfile.create failed.', {
-          email: normalizedEmail,
-          status: info.status,
-          message: info.message,
-        });
-        throw error;
-      }
+    if (existing?.id) {
+      // Preserve existing role if it's elevated (don't downgrade admins)
+      const preservedRole = ['owner', 'super_admin', 'operator'].includes(existing.role)
+        ? existing.role
+        : 'employee';
+      await base44.entities.EmployeeProfile.update(existing.id, { ...profilePayload, role: preservedRole });
+    } else {
+      await base44.entities.EmployeeProfile.create(profilePayload);
     }
 
-    if (saved?.has_onboarded !== true || !saved?.pin_hash) {
-      console.error('[AuthContext] Onboarding save returned incomplete EmployeeProfile.', saved);
-      throw new Error('Profile save did not persist setup fields.');
-    }
-
-    completeOnboarding({
-      ...saved,
-      full_name: fullName,
-      contact_phone: contactPhone,
-      pin_hash: pinHash,
-    });
-
-    const reloaded = await reloadCurrentUser();
-    if (reloaded?.has_onboarded !== true || !reloaded?.pin_hash) {
-      console.error('[AuthContext] Reloaded profile is still incomplete after onboarding save.', reloaded);
-      throw new Error('Profile saved but setup could not be confirmed.');
-    }
-    return reloaded;
+    completeOnboarding({ ...profilePayload });
+    return profilePayload;
   };
 
   const logout = (shouldRedirect = true) => {

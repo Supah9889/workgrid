@@ -99,9 +99,13 @@ export default function Onboarding() {
       }, 1500);
     } catch (e) {
       console.error('[Onboarding] Save failed:', e);
-      const msg = e?.message?.toLowerCase().includes('network') || e?.message?.toLowerCase().includes('fetch')
+      const lowerMessage = e?.message?.toLowerCase() || '';
+      const status = e?.status || e?.response?.status || e?.data?.status;
+      const msg = status === 401 || status === 403 || lowerMessage.includes('forbidden') || lowerMessage.includes('unauthorized') || lowerMessage.includes('permission')
+        ? 'Profile save was blocked. Please contact admin.'
+        : lowerMessage.includes('network') || lowerMessage.includes('fetch')
         ? 'Network error — check your connection and try again.'
-        : 'Could not save your profile. Please try again.';
+        : e?.message || 'Could not save your profile. Please try again.';
       setError(msg);
     }
     setSaving(false);

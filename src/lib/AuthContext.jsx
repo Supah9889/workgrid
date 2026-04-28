@@ -9,6 +9,10 @@ function isAdminRole(role) {
   return role === 'owner' || role === 'super_admin' || role === 'operator';
 }
 
+function isEmployeeSetupRecord(record, email) {
+  return record?.email === email && (!record.role || record.role === 'employee');
+}
+
 function pickBestUserRecord(records = []) {
   return [...records].sort((a, b) => {
     const aReady = a.has_onboarded && a.pin_hash ? 1 : 0;
@@ -21,6 +25,18 @@ function pickBestUserRecord(records = []) {
 
     return new Date(b.updated_date || b.created_date || 0) - new Date(a.updated_date || a.created_date || 0);
   })[0] || null;
+}
+
+function pickOnboardingTarget(records = [], email) {
+  const ownEmployeeRecords = records.filter(r => isEmployeeSetupRecord(r, email));
+  return pickBestUserRecord(ownEmployeeRecords) || pickBestUserRecord(records.filter(r => r.email === email));
+}
+
+function getErrorInfo(error) {
+  return {
+    message: error?.message || String(error),
+    status: error?.status || error?.response?.status || error?.data?.status || null,
+  };
 }
 
 export const AuthProvider = ({ children }) => {
@@ -51,12 +67,25 @@ export const AuthProvider = ({ children }) => {
     let userEntity = pickBestUserRecord(results);
     if (!userEntity) {
       console.info('[AuthContext] Creating first-time employee User record.', { email: authUser.email });
-      userEntity = await base44.entities.User.create({
+      const firstTimePayload = {
         email: authUser.email,
         role: 'employee',
         status: 'active',
         has_onboarded: false,
-      });
+      };
+      try {
+        userEntity = await base44.entities.User.create(firstTimePayload);
+      } catch (error) {
+        const info = getErrorInfo(error);
+        console.error('User.create failed', {
+          email: authUser.email,
+          error: {
+            status: info.status,
+            message: info.message,
+          },
+        });
+        throw error;
+      }
     }
 
     if (!userEntity.role || !['owner', 'super_admin', 'operator', 'employee'].includes(userEntity.role)) {
@@ -180,29 +209,80 @@ export const AuthProvider = ({ children }) => {
       });
     }
 
-    const existing = pickBestUserRecord(records);
-    const existingRole = existing?.role;
-    const safeRole = isAdminRole(existingRole) ? existingRole : 'employee';
-    const payload = {
+    const existing = pickOnboardingTarget(records, authUser.email);
+    const canUpdateExisting = isEmployeeSetupRecord(existing, authUser.email);
+    const selfSetupPayload = {
       email: authUser.email,
       full_name: fullName,
       contact_phone: contactPhone,
       pin_hash: pinHash,
       has_onboarded: true,
-      status: existing?.status || 'active',
-      role: safeRole,
+      role: 'employee',
     };
 
     console.info('[AuthContext] Saving onboarding profile.', {
       email: authUser.email,
       userId: existing?.id || null,
-      role: safeRole,
+      role: 'employee',
       hasExistingRecord: !!existing,
+      mode: canUpdateExisting ? 'update' : 'create',
     });
 
-    const saved = existing?.id
-      ? await base44.entities.User.update(existing.id, payload)
-      : await base44.entities.User.create(payload);
+    let saved = null;
+    if (canUpdateExisting && existing?.id) {
+      try {
+        saved = await base44.entities.User.update(existing.id, selfSetupPayload);
+      } catch (error) {
+        const info = getErrorInfo(error);
+        console.error('[AuthContext] Onboarding User.update failed.', {
+          email: authUser.email,
+          targetUserId: existing.id,
+          mode: 'update',
+          status: info.status,
+          message: info.message,
+        });
+
+        const hasOtherUsableRecord = records.some(r => r.id !== existing.id && isEmployeeSetupRecord(r, authUser.email));
+        if (hasOtherUsableRecord) throw error;
+      }
+    }
+
+    if (!saved) {
+      const createPayload = {
+        ...selfSetupPayload,
+        status: 'active',
+      };
+      try {
+        saved = await base44.entities.User.create(createPayload);
+      } catch (error) {
+        const info = getErrorInfo(error);
+        console.error('User.create failed', {
+          email: authUser.email,
+          error: {
+            status: info.status,
+            message: info.message,
+          },
+        });
+        console.error('[AuthContext] Onboarding User.create failed.', {
+          email: authUser.email,
+          targetUserId: null,
+          mode: 'create',
+          status: info.status,
+          message: info.message,
+        });
+        throw error;
+      }
+    }
+
+    if (saved?.has_onboarded !== true || !saved?.pin_hash) {
+      console.error('[AuthContext] Onboarding save returned incomplete User record.', {
+        email: authUser.email,
+        targetUserId: saved?.id || null,
+        hasOnboarded: saved?.has_onboarded,
+        hasPin: !!saved?.pin_hash,
+      });
+      throw new Error('Profile save did not persist setup fields.');
+    }
 
     completeOnboarding({
       ...saved,
@@ -211,7 +291,17 @@ export const AuthProvider = ({ children }) => {
       pin_hash: pinHash,
     });
 
-    return reloadCurrentUser();
+    const reloaded = await reloadCurrentUser();
+    if (reloaded?.has_onboarded !== true || !reloaded?.pin_hash) {
+      console.error('[AuthContext] Reloaded User is still incomplete after onboarding save.', {
+        email: authUser.email,
+        targetUserId: reloaded?.id || null,
+        hasOnboarded: reloaded?.has_onboarded,
+        hasPin: !!reloaded?.pin_hash,
+      });
+      throw new Error('Profile saved but setup could not be confirmed.');
+    }
+    return reloaded;
   };
 
   const logout = (shouldRedirect = true) => {

@@ -36,20 +36,9 @@
   },
   "rls": {
     "create": {
-      "$or": [
-        {
-          "$and": [
-            { "data.email": "{{user.email}}" },
-            {
-              "$or": [
-                { "data.role": "employee" },
-                { "data.role": null }
-              ]
-            }
-          ]
-        },
-        { "user_condition": { "role": "admin" } },
-        { "user_condition": { "data.role": { "$in": ["owner", "super_admin"] } } }
+      "$and": [
+        { "data.email": "{{user.email}}" },
+        { "data.role": "employee" }
       ]
     },
     "read": {
@@ -67,7 +56,8 @@
             {
               "$or": [
                 { "data.role": "employee" },
-                { "data.role": null }
+                { "data.role": null },
+                { "data.role": { "$exists": false } }
               ]
             }
           ]

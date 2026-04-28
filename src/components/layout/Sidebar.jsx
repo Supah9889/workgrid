@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Link, useLocation } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { useUserCan } from '@/lib/permissions.jsx';
-import { base44 } from '@/api/base44Client';
 import { cn } from '@/lib/utils';
 import {
   LayoutDashboard, ClipboardList, Users, Shield, MapPin, Clock,
@@ -43,7 +42,7 @@ const EMPLOYEE_NAV = [
 ];
 
 export default function Sidebar({ onClose }) {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const userCan = useUserCan(user);
   const location = useLocation();
   const [collapsed, setCollapsed] = useState(false);
@@ -141,7 +140,7 @@ export default function Sidebar({ onClose }) {
         )}
         <div className="flex items-center gap-1">
           <button
-            onClick={() => base44.auth.logout()}
+            onClick={() => logout()}
             className={cn(
               'flex items-center gap-2 px-2.5 py-1.5 rounded-md text-xs text-sidebar-foreground/70 hover:bg-destructive/20 hover:text-red-400 transition-colors flex-1',
               collapsed && 'justify-center'

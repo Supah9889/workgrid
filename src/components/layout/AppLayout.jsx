@@ -4,10 +4,10 @@ import Sidebar from './Sidebar';
 import NotificationCenter from '@/components/notifications/NotificationCenter';
 import ChatPanel from '@/components/chat/ChatPanel';
 import { useAuth } from '@/lib/AuthContext';
-import { Menu } from 'lucide-react';
+import { LogOut, Menu } from 'lucide-react';
 
 export default function AppLayout() {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
   return (
@@ -23,19 +23,36 @@ export default function AppLayout() {
       <div className="flex-1 flex flex-col overflow-hidden">
         {/* Top bar */}
         <header
-          className="border-b border-border bg-card flex items-center justify-end px-5 gap-3 flex-shrink-0"
+          className="border-b border-border bg-card flex items-center justify-between px-3 sm:px-5 gap-2 flex-shrink-0"
           style={{ paddingTop: 'calc(0.75rem + var(--sat))', minHeight: 'calc(2.75rem + var(--sat))' }}
         >
-          <button onClick={() => setSidebarOpen(true)} className="md:hidden p-2 rounded-md hover:bg-muted transition-colors mr-2">
-            <Menu className="w-5 h-5" />
-          </button>
-          <NotificationCenter />
-          <div className="w-px h-5 bg-border" />
-          <div className="flex items-center gap-2">
-            <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
-              {(user?.full_name || user?.email || '?')[0].toUpperCase()}
+          <div className="flex items-center gap-2 min-w-0">
+            <button onClick={() => setSidebarOpen(true)} className="md:hidden p-2 rounded-md hover:bg-muted transition-colors" aria-label="Open navigation menu">
+              <Menu className="w-5 h-5" />
+            </button>
+            <div className="md:hidden min-w-0">
+              <p className="text-xs font-semibold truncate max-w-[9rem]">{user?.full_name || user?.email}</p>
+              <p className="text-[10px] text-muted-foreground capitalize">{(user?.role || 'employee').replace('_', ' ')}</p>
             </div>
-            <span className="text-xs font-medium hidden sm:block">{user?.full_name || user?.email}</span>
+          </div>
+          <div className="flex items-center justify-end gap-2 sm:gap-3">
+            <NotificationCenter />
+            <button
+              type="button"
+              onClick={() => logout()}
+              className="md:hidden inline-flex items-center gap-1.5 rounded-md border border-border px-2.5 py-2 text-xs font-medium text-muted-foreground hover:bg-muted hover:text-foreground transition-colors"
+              aria-label="Log out"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>Logout</span>
+            </button>
+            <div className="hidden md:block w-px h-5 bg-border" />
+            <div className="hidden md:flex items-center gap-2">
+              <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary">
+                {(user?.full_name || user?.email || '?')[0].toUpperCase()}
+              </div>
+              <span className="text-xs font-medium hidden sm:block">{user?.full_name || user?.email}</span>
+            </div>
           </div>
         </header>
         <main className="flex-1 overflow-auto main-content-pad page-scroll-container">

@@ -2,6 +2,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { AlertTriangle, MapPin } from 'lucide-react';
+import { isOpenClockRecord } from '@/lib/clockRecords';
 
 function LocationCell({ lat, lng, inBounds }) {
   if (lat == null) return <span className="text-muted-foreground text-xs">No GPS</span>;
@@ -40,7 +41,7 @@ export default function DailyLog({ records }) {
         </TableHeader>
         <TableBody>
           {records.map(r => {
-            const isOpen = !r.punch_out_time && !r.manually_closed;
+            const isOpen = isOpenClockRecord(r);
             return (
               <TableRow key={r.id} className={r.flagged ? 'bg-red-50' : isOpen ? 'bg-amber-50' : ''}>
                 <TableCell>

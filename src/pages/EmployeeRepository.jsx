@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input';
 import { Search, Plus, Mail, Phone, UserCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AddEmployeeDialog from '@/components/employees/AddEmployeeDialog';
+import { isOpenClockRecord } from '@/lib/clockRecords';
 
 const ROLE_STYLES = {
   super_admin: 'bg-purple-100 text-purple-700 border-purple-200',
@@ -95,7 +96,7 @@ export default function EmployeeRepository() {
   });
 
   const clockedInEmails = new Set(
-    clockRecords.filter(r => !r.clock_out).map(r => r.employee_email)
+    clockRecords.filter(isOpenClockRecord).map(r => r.employee_email)
   );
 
   let filtered = users.filter(u => {

@@ -1,7 +1,7 @@
 import { useState } from 'react';
-import { differenceInMinutes, format } from 'date-fns';
-import { MapPin } from 'lucide-react';
+import { differenceInMinutes } from 'date-fns';
 import EmployeeDrawer from '@/components/dashboard/EmployeeDrawer';
+import { getPunchInTime } from '@/lib/clockRecords';
 
 function LiveDuration({ since }) {
   const mins = differenceInMinutes(new Date(), new Date(since));
@@ -60,7 +60,7 @@ export default function EmployeeStatusPanel({ employees, clockedInRecords, today
                     <p className="text-sm font-medium truncate">{emp.full_name || emp.email}</p>
                     <p className={`text-xs truncate ${isClockedIn ? 'text-emerald-600' : 'text-muted-foreground'}`}>
                       {isClockedIn
-                        ? <><LiveDuration since={clockRec.clock_in} /> on clock</>
+                        ? <><LiveDuration since={getPunchInTime(clockRec)} /> on clock</>
                         : 'Off clock'
                       }
                     </p>

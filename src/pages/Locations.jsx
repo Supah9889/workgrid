@@ -1,11 +1,12 @@
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
 import { MapPin, RefreshCw, Users } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { formatDistanceToNow, startOfDay, endOfDay } from 'date-fns';
+import { formatDistanceToNow } from 'date-fns';
 import EmployeeMap from '@/components/locations/EmployeeMap';
+import { isOpenClockRecord } from '@/lib/clockRecords';
 
 export default function Locations() {
   const queryClient = useQueryClient();
@@ -21,7 +22,7 @@ export default function Locations() {
     queryKey: ['clocked-in-today'],
     queryFn: () => base44.entities.ClockRecord.filter({ date: today }),
     refetchInterval: 30000,
-    select: data => data.filter(r => !r.punch_out_time),
+    select: data => data.filter(isOpenClockRecord),
   });
 
   const { data: todayTasks = [] } = useQuery({

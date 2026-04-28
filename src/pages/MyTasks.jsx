@@ -3,7 +3,7 @@ import PullToRefresh from '@/components/ui/PullToRefresh';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuth } from '@/lib/AuthContext';
 import { base44 } from '@/api/base44Client';
-import { Loader2, MapPin, Clock, Package, Building2, ChevronDown, ChevronUp, ListTodo, Navigation, WifiOff, RefreshCw } from 'lucide-react';
+import { MapPin, Clock, Package, Building2, ChevronDown, ChevronUp, ListTodo, Navigation, WifiOff, RefreshCw } from 'lucide-react';
 import { useOfflineQueue } from '@/hooks/useOfflineQueue';
 import { PriorityBadge, StatusBadge } from '@/components/tasks/TaskBadges';
 import { useToast } from '@/components/ui/use-toast';

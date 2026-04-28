@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useAuth } from '@/lib/AuthContext';
 import { useQuery } from '@tanstack/react-query';
 import { base44 } from '@/api/base44Client';
-import { format, startOfDay, endOfDay, subDays } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { Lock, Shield, AlertTriangle, Clock, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';

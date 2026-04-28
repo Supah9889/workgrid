@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
-import { format, subDays, startOfDay } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { ArrowLeft, MapPin, Clock, ClipboardList, Activity, Edit2, Check, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +10,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { StatusBadge, PriorityBadge } from '@/components/tasks/TaskBadges';
 import { useToast } from '@/components/ui/use-toast';
+import { getPunchInTime, getPunchOutTime, isOpenClockRecord } from '@/lib/clockRecords';
 
 const STATUS_STYLES = {
   active: 'bg-emerald-100 text-emerald-700 border-emerald-200',
@@ -248,8 +249,8 @@ export default function EmployeeProfile() {
                     </div>
                     {records.map(r => (
                       <div key={r.id} className="flex items-center gap-4 text-xs text-muted-foreground">
-                        <span>In: {r.clock_in ? format(new Date(r.clock_in), 'h:mm a') : '—'}</span>
-                        <span>Out: {r.clock_out ? format(new Date(r.clock_out), 'h:mm a') : <span className="text-red-500">Open</span>}</span>
+                        <span>In: {getPunchInTime(r) ? format(new Date(getPunchInTime(r)), 'h:mm a') : '—'}</span>
+                        <span>Out: {getPunchOutTime(r) ? format(new Date(getPunchOutTime(r)), 'h:mm a') : isOpenClockRecord(r) ? <span className="text-red-500">Open</span> : '—'}</span>
                         <span>{r.total_hours != null ? `${r.total_hours}h` : '—'}</span>
                         {r.manually_closed && <Badge variant="outline" className="text-[10px] py-0 h-4 text-orange-500 border-orange-300">Manual</Badge>}
                       </div>

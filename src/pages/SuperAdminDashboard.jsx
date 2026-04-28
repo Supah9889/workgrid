@@ -7,6 +7,7 @@ import { Plus, MapPin, Clock, Package, Building2, ChevronDown, ChevronUp, User }
 import { PriorityBadge, StatusBadge } from '@/components/tasks/TaskBadges';
 import CreateTaskDialog from '@/components/tasks/CreateTaskDialog';
 import { format } from 'date-fns';
+import { isOpenClockRecord } from '@/lib/clockRecords';
 
 function TaskCard({ task, employees }) {
   const [expanded, setExpanded] = useState(false);
@@ -192,7 +193,7 @@ export default function SuperAdminDashboard() {
   const assigned = allTasks.filter(t => !!t.assigned_employee);
 
   const todayStr = new Date().toISOString().split('T')[0];
-  const clockedInToday = clockRecords.filter(r => r.date === todayStr && r.punch_in_time && !r.punch_out_time).length;
+  const clockedInToday = clockRecords.filter(r => r.date === todayStr && isOpenClockRecord(r)).length;
   const activeDeliveries = allTasks.filter(t => t.status === 'picked_up' || t.status === 'en_route').length;
   const deliveredToday = allTasks.filter(t => t.status === 'delivered' && (t.updated_date?.startsWith(todayStr) || t.created_date?.startsWith(todayStr))).length;
   const oobAlerts = clockRecords.filter(r => r.date === todayStr && r.flagged).length;

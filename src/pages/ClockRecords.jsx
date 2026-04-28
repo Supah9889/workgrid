@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar, RefreshCw } from 'lucide-react';
 import LiveStatusList from '@/components/clock/LiveStatusList';
 import DailyLog from '@/components/clock/DailyLog';
+import { isOpenClockRecord } from '@/lib/clockRecords';
 
 export default function ClockRecords() {
   const queryClient = useQueryClient();
@@ -31,7 +32,7 @@ export default function ClockRecords() {
   }, [selectedDate, queryClient]);
 
   // Open records = punched in, not yet punched out
-  const clockedInRecords = allRecords.filter(r => !r.punch_out_time && !r.manually_closed);
+  const clockedInRecords = allRecords.filter(isOpenClockRecord);
   const isToday = selectedDate === new Date().toISOString().split('T')[0];
 
   const enrichedEmployees = employees

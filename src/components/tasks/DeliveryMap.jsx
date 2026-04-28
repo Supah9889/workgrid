@@ -3,7 +3,6 @@ import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { MapPin, Loader2, AlertCircle, Navigation } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
 
 // Fix leaflet default icon paths
 delete L.Icon.Default.prototype._getIconUrl;

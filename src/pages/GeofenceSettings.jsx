@@ -5,7 +5,7 @@ import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/components/ui/use-toast';
-import { MapPin, Navigation, Save, Loader2, Radio, ShieldOff } from 'lucide-react';
+import { Navigation, Save, Loader2, Radio, ShieldOff } from 'lucide-react';
 
 const DEFAULT_FORM = {
   geofence_enabled: false,

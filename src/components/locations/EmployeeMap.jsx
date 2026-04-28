@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
 import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import { base44 } from '@/api/base44Client';
 import { formatDistanceToNow } from 'date-fns';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
+import { getPunchInTime } from '@/lib/clockRecords';
 
 // Fix leaflet default icons
 delete L.Icon.Default.prototype._getIconUrl;
@@ -69,7 +69,7 @@ export default function EmployeeMap({ locationRecords, clockedInRecords, tasksBy
                 <p style={{ fontSize: '12px', color: '#6b7280', margin: '0 0 2px' }}>Updated {lastUpdated}</p>
                 {clockRec && (
                   <p style={{ fontSize: '12px', color: '#059669', margin: '0 0 6px' }}>
-                    Clocked in since {new Date(clockRec.clock_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    Clocked in since {new Date(getPunchInTime(clockRec)).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 )}
                 {tasks.length > 0 && (

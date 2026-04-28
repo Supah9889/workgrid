@@ -4,6 +4,7 @@ import { base44 } from '@/api/base44Client';
 import { format, differenceInMinutes } from 'date-fns';
 import { StatusBadge, PriorityBadge } from '@/components/tasks/TaskBadges';
 import { Badge } from '@/components/ui/badge';
+import { getPunchInTime, getPunchOutTime, isOpenClockRecord } from '@/lib/clockRecords';
 
 export default function EmployeeDrawer({ employee, clockedInRecords, todayTasks, onClose }) {
   const [clockHistory, setClockHistory] = useState([]);
@@ -19,6 +20,7 @@ export default function EmployeeDrawer({ employee, clockedInRecords, todayTasks,
 
   const clockRec = clockedInRecords.find(r => r.employee_email === employee.email);
   const isClockedIn = !!clockRec;
+  const clockRecPunchIn = getPunchInTime(clockRec);
 
   return (
     <div className="fixed inset-0 z-50 flex justify-end">
@@ -54,9 +56,9 @@ export default function EmployeeDrawer({ employee, clockedInRecords, todayTasks,
                 <span className="text-sm font-semibold text-emerald-700">Currently Clocked In</span>
               </div>
               <p className="text-xs text-emerald-600">
-                Since {format(new Date(clockRec.clock_in), 'h:mm a')} ·{' '}
+                Since {format(new Date(clockRecPunchIn), 'h:mm a')} ·{' '}
                 {(() => {
-                  const m = differenceInMinutes(new Date(), new Date(clockRec.clock_in));
+                  const m = differenceInMinutes(new Date(), new Date(clockRecPunchIn));
                   const h = Math.floor(m / 60);
                   return h > 0 ? `${h}h ${m % 60}m` : `${m}m`;
                 })()} on clock
@@ -97,8 +99,8 @@ export default function EmployeeDrawer({ employee, clockedInRecords, todayTasks,
               <div className="space-y-1.5">
                 {clockHistory.map(r => (
                   <div key={r.id} className="flex items-center justify-between px-3 py-2 rounded-lg border border-border text-xs">
-                    <span>In: {format(new Date(r.clock_in), 'h:mm a')}</span>
-                    <span>{r.clock_out ? `Out: ${format(new Date(r.clock_out), 'h:mm a')}` : <span className="text-red-500">Open</span>}</span>
+                    <span>In: {getPunchInTime(r) ? format(new Date(getPunchInTime(r)), 'h:mm a') : '—'}</span>
+                    <span>{getPunchOutTime(r) ? `Out: ${format(new Date(getPunchOutTime(r)), 'h:mm a')}` : isOpenClockRecord(r) ? <span className="text-red-500">Open</span> : '—'}</span>
                     <span className="text-muted-foreground">{r.total_hours != null ? `${r.total_hours}h` : '—'}</span>
                   </div>
                 ))}

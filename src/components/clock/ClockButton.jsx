@@ -4,6 +4,7 @@ import { useToast } from '@/components/ui/use-toast';
 import { differenceInSeconds } from 'date-fns';
 import { logActivity } from '@/lib/activityLogger';
 import { notifyClockIn, notifyClockOut, notifyOutOfBoundsPunch } from '@/lib/notificationService';
+import { isOpenClockRecord } from '@/lib/clockRecords';
 import PinModal from '@/components/clock/PinModal';
 import { Loader2, Coffee, LogIn, LogOut } from 'lucide-react';
 
@@ -75,12 +76,22 @@ export default function ClockButton({ user }) {
     const today = new Date().toISOString().split('T')[0];
     try {
       const records = await base44.entities.ClockRecord.filter({ employee_email: user.email, date: today });
-      const open = records.find(r => !r.punch_out_time && !r.manually_closed);
+      const open = records.find(isOpenClockRecord);
       setClockRecord(open || null);
       if (open) startLocationTracking(open.id);
     } finally {
       setLoading(false);
     }
+  };
+
+  const getOwnedOpenRecord = async () => {
+    const today = new Date().toISOString().split('T')[0];
+    const records = await base44.entities.ClockRecord.filter({ employee_email: user.email, date: today });
+    const open = records.find(isOpenClockRecord);
+    if (!open || open.id !== clockRecord?.id) {
+      throw new Error('No active clock record found. Refresh and try again.');
+    }
+    return open;
   };
 
   const loadAppSettings = async () => {
@@ -176,10 +187,10 @@ export default function ClockButton({ user }) {
   };
 
   const executeLunchStart = async () => {
-    if (!clockRecord?.id) throw new Error('No active clock record found.');
+    const activeRecord = await getOwnedOpenRecord();
     const pos = await capturePosition();
     const now = new Date().toISOString();
-    const updated = await base44.entities.ClockRecord.update(clockRecord.id, {
+    const updated = await base44.entities.ClockRecord.update(activeRecord.id, {
       lunch_start: now,
       lunch_start_lat: pos?.lat ?? null,
       lunch_start_lng: pos?.lng ?? null,
@@ -189,13 +200,13 @@ export default function ClockButton({ user }) {
   };
 
   const executeLunchEnd = async () => {
-    if (!clockRecord?.id) throw new Error('No active clock record found.');
+    const activeRecord = await getOwnedOpenRecord();
     const now = new Date();
     const pos = await capturePosition();
-    const lunchMins = clockRecord.lunch_start
-      ? Math.round((now - new Date(clockRecord.lunch_start)) / 60000)
+    const lunchMins = activeRecord.lunch_start
+      ? Math.round((now - new Date(activeRecord.lunch_start)) / 60000)
       : 0;
-    const updated = await base44.entities.ClockRecord.update(clockRecord.id, {
+    const updated = await base44.entities.ClockRecord.update(activeRecord.id, {
       lunch_end: now.toISOString(),
       lunch_end_lat: pos?.lat ?? null,
       lunch_end_lng: pos?.lng ?? null,
@@ -206,20 +217,20 @@ export default function ClockButton({ user }) {
   };
 
   const executePunchOut = async () => {
-    if (!clockRecord?.id) throw new Error('No active clock record found.');
+    const activeRecord = await getOwnedOpenRecord();
     const now = new Date();
     const pos = await capturePosition();
     const geo = checkGeofence(pos?.lat, pos?.lng);
 
-    const inTime = new Date(clockRecord.punch_in_time);
-    if (!clockRecord.punch_in_time || isNaN(inTime)) throw new Error('Clock-in time is missing or corrupted.');
+    const inTime = new Date(activeRecord.punch_in_time);
+    if (!activeRecord.punch_in_time || isNaN(inTime)) throw new Error('Clock-in time is missing or corrupted.');
 
     const totalSecs = (now - inTime) / 1000;
-    const lunchSecs = (clockRecord.total_lunch_minutes || 0) * 60;
+    const lunchSecs = (activeRecord.total_lunch_minutes || 0) * 60;
     const totalHours = Math.max(0, Math.round(((totalSecs - lunchSecs) / 3600) * 100) / 100);
-    const wasFlagged = clockRecord.flagged || !geo.in_bounds;
+    const wasFlagged = activeRecord.flagged || !geo.in_bounds;
 
-    await base44.entities.ClockRecord.update(clockRecord.id, {
+    await base44.entities.ClockRecord.update(activeRecord.id, {
       punch_out_time: now.toISOString(),
       punch_out_lat: pos?.lat ?? null,
       punch_out_lng: pos?.lng ?? null,
@@ -262,11 +273,18 @@ export default function ClockButton({ user }) {
       const label = ACTION_LABELS[action] || 'Action';
       // Classify the error for a meaningful message
       let description = 'An unexpected error occurred. Please try again.';
-      if (e?.message?.toLowerCase().includes('network') || e?.message?.toLowerCase().includes('fetch')) {
+      const message = e?.message?.toLowerCase() || '';
+      if (e?.status === 401 || e?.status === 403 || message.includes('unauthorized') || message.includes('forbidden')) {
+        description = action === 'punch_in'
+          ? 'Your account does not have permission to create a clock record. Contact your administrator.'
+          : 'Your account does not have permission to update this clock record. Contact your administrator.';
+      } else if (message.includes('network') || message.includes('fetch')) {
         description = 'Network error — check your connection and try again.';
-      } else if (e?.message?.toLowerCase().includes('permission') || e?.message?.toLowerCase().includes('denied')) {
-        description = 'Location permission was denied. Check your browser settings.';
-      } else if (e?.message?.toLowerCase().includes('validation') || e?.message?.toLowerCase().includes('required')) {
+      } else if (message.includes('permission') || message.includes('denied')) {
+        description = action === 'punch_in'
+          ? 'Clock-in was denied. Contact your administrator if this continues.'
+          : 'This clock update was denied. Contact your administrator if this continues.';
+      } else if (message.includes('validation') || message.includes('required')) {
         description = 'Missing required data. Contact your administrator.';
       } else if (e?.message) {
         description = e.message;

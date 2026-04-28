@@ -5,7 +5,6 @@ import { Send, Plus, MessageSquare } from 'lucide-react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '@/components/ui/dialog';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import MessageBubble from './MessageBubble';
-import { format } from 'date-fns';
 
 export default function PrivateChat({ user, markAsRead }) {
   const [conversations, setConversations] = useState([]);

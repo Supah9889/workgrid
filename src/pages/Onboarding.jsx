@@ -1,7 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
-import { base44 } from '@/api/base44Client';
 import { Hexagon, ChevronLeft, Check, Loader2 } from 'lucide-react';
 
 async function hashPin(pin) {
@@ -47,7 +46,7 @@ function NumPad({ value, onChange }) {
 }
 
 export default function Onboarding() {
-  const { user, completeOnboarding } = useAuth();
+  const { user, saveOnboardingProfile } = useAuth();
   const navigate = useNavigate();
   const [step, setStep] = useState(1);
   const [fullName, setFullName] = useState(user?.full_name || '');
@@ -83,15 +82,16 @@ export default function Onboarding() {
       const trimmedName = fullName.trim();
       const trimmedPhone = phone.trim();
 
-      await base44.entities.User.update(user.id, {
-        full_name: trimmedName,
-        contact_phone: trimmedPhone,
-        pin_hash: pinHash,
-        has_onboarded: true,
+      console.info('[Onboarding] Saving setup fields.', {
+        email: user?.email,
+        hasUserId: !!user?.id,
       });
-      sessionStorage.setItem('onboarding_complete', 'true');
+      await saveOnboardingProfile({
+        fullName: trimmedName,
+        contactPhone: trimmedPhone,
+        pinHash,
+      });
       sessionStorage.setItem('pin_verified', 'true');
-      completeOnboarding({ full_name: trimmedName, contact_phone: trimmedPhone, pin_hash: pinHash });
       setStep(4);
       setTimeout(() => {
         setVisible(false);

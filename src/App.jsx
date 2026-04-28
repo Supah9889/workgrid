@@ -50,9 +50,7 @@ const AuthenticatedApp = () => {
   }
 
   if (needsOnboarding &&
-      user?.has_onboarded === false &&
-      location.pathname !== '/onboarding' &&
-      !sessionStorage.getItem('onboarding_complete')) {
+      location.pathname !== '/onboarding') {
     return <Navigate to="/onboarding" replace />;
   }
 

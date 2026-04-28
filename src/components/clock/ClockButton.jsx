@@ -58,10 +58,37 @@ export default function ClockButton({ user }) {
   const [appSettings, setAppSettings] = useState(null);
 
   const openPinModal = async (action) => {
-    const users = await base44.entities.User.filter({ email: user.email });
-    const fresh = users?.[0];
-    setExpectedHash(fresh?.pin_hash || user.pin_hash || null);
-    setPendingAction(action);
+    try {
+      const users = await base44.entities.User.filter({ email: user.email });
+      const fresh = users?.find(u => u.has_onboarded && u.pin_hash) || users?.[0];
+      const pinHash = fresh?.pin_hash || user.pin_hash || null;
+      const isOnboarded = fresh?.has_onboarded ?? user.has_onboarded;
+
+      if (isOnboarded !== true || !pinHash) {
+        console.warn('[ClockButton] Clock action blocked by incomplete setup.', {
+          email: user.email,
+          action,
+          hasOnboarded: isOnboarded,
+          hasPin: !!pinHash,
+        });
+        toast({
+          title: 'Finish setup first',
+          description: 'Your profile and 4-digit PIN must be saved before clocking in.',
+          variant: 'destructive',
+        });
+        return;
+      }
+
+      setExpectedHash(pinHash);
+      setPendingAction(action);
+    } catch (err) {
+      console.error('[ClockButton] Could not verify setup before clock action:', err);
+      toast({
+        title: 'Could not verify setup',
+        description: err.message || 'Check your connection and try again.',
+        variant: 'destructive',
+      });
+    }
   };
   const locationIntervalRef = useRef(null);
 

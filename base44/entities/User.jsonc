@@ -40,7 +40,12 @@
         {
           "$and": [
             { "data.email": "{{user.email}}" },
-            { "data.role": "employee" }
+            {
+              "$or": [
+                { "data.role": "employee" },
+                { "data.role": null }
+              ]
+            }
           ]
         },
         { "user_condition": { "role": "admin" } },
@@ -59,7 +64,12 @@
         {
           "$and": [
             { "data.email": "{{user.email}}" },
-            { "data.role": "employee" }
+            {
+              "$or": [
+                { "data.role": "employee" },
+                { "data.role": null }
+              ]
+            }
           ]
         },
         { "user_condition": { "role": "admin" } },

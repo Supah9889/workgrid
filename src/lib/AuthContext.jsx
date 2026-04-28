@@ -5,6 +5,24 @@ import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
 
 const AuthContext = createContext();
 
+function isAdminRole(role) {
+  return role === 'owner' || role === 'super_admin' || role === 'operator';
+}
+
+function pickBestUserRecord(records = []) {
+  return [...records].sort((a, b) => {
+    const aReady = a.has_onboarded && a.pin_hash ? 1 : 0;
+    const bReady = b.has_onboarded && b.pin_hash ? 1 : 0;
+    if (aReady !== bReady) return bReady - aReady;
+
+    const aActive = a.status !== 'inactive' ? 1 : 0;
+    const bActive = b.status !== 'inactive' ? 1 : 0;
+    if (aActive !== bActive) return bActive - aActive;
+
+    return new Date(b.updated_date || b.created_date || 0) - new Date(a.updated_date || a.created_date || 0);
+  })[0] || null;
+}
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -20,6 +38,52 @@ export const AuthProvider = ({ children }) => {
     checkAppState();
   }, []);
 
+  const loadUserEntity = async (authUser) => {
+    const results = await base44.entities.User.filter({ email: authUser.email });
+    if (results?.length > 1) {
+      console.warn('[AuthContext] Duplicate User records found for email; using best match.', {
+        email: authUser.email,
+        count: results.length,
+        ids: results.map(r => r.id),
+      });
+    }
+
+    let userEntity = pickBestUserRecord(results);
+    if (!userEntity) {
+      console.info('[AuthContext] Creating first-time employee User record.', { email: authUser.email });
+      userEntity = await base44.entities.User.create({
+        email: authUser.email,
+        role: 'employee',
+        status: 'active',
+        has_onboarded: false,
+      });
+    }
+
+    if (!userEntity.role || !['owner', 'super_admin', 'operator', 'employee'].includes(userEntity.role)) {
+      userEntity = { ...userEntity, role: 'employee' };
+    }
+
+    return userEntity;
+  };
+
+  const applyAuthUser = (authUser, userEntity) => {
+    const mergedUser = { ...authUser, ...userEntity };
+    setUser(mergedUser);
+    setIsAuthenticated(true);
+    setNeedsOnboarding(mergedUser.has_onboarded !== true || !mergedUser.pin_hash);
+    return mergedUser;
+  };
+
+  const reloadCurrentUser = async () => {
+    console.info('[AuthContext] Reloading current user context.');
+    const authUser = await base44.auth.me();
+    const userEntity = await loadUserEntity(authUser);
+    const merged = applyAuthUser(authUser, userEntity);
+    setIsLoadingAuth(false);
+    setAuthChecked(true);
+    return merged;
+  };
+
   const checkAppState = async () => {
     try {
       setIsLoadingPublicSettings(true);
@@ -29,7 +93,7 @@ export const AuthProvider = ({ children }) => {
         baseURL: `/api/apps/public`,
         headers: { 'X-App-Id': appParams.appId },
         token: appParams.token,
-        interceptResponses: true
+        interceptResponses: true,
       });
 
       try {
@@ -71,58 +135,19 @@ export const AuthProvider = ({ children }) => {
   };
 
   const checkUserAuth = async () => {
-    // Belt-and-suspenders: if sessionStorage flag is set, onboarding just
-    // completed — trust local state entirely and skip the DB re-fetch.
-    const justOnboarded = sessionStorage.getItem('onboarding_complete');
-    if (justOnboarded) {
-      sessionStorage.removeItem('onboarding_complete');
-      setNeedsOnboarding(false);
-      setIsLoadingAuth(false);
-      setAuthChecked(true);
-      return;
-    }
-
     try {
       setIsLoadingAuth(true);
       const authUser = await base44.auth.me();
 
-      // Ref guard: onboarding just completed in this session — skip DB re-fetch
-      // to prevent a stale cached response from resetting needsOnboarding.
-      if (onboardingComplete.current) {
-        setNeedsOnboarding(false);
-        setIsLoadingAuth(false);
-        setAuthChecked(true);
-        return;
-      }
-
-      // Fetch the app's custom User entity to get role and onboarding status
       let userEntity = null;
       try {
-        const results = await base44.entities.User.filter({ email: authUser.email });
-        if (results && results.length > 0) {
-          userEntity = results[0];
-        } else {
-          // First login — create entity with safe defaults
-          userEntity = await base44.entities.User.create({
-            email: authUser.email,
-            role: 'employee',
-            has_onboarded: false,
-          });
-        }
+        userEntity = await loadUserEntity(authUser);
       } catch (entityError) {
-        // Non-fatal: fall back to a safe in-memory user so the app still loads
         console.error('Failed to fetch/create User entity:', entityError);
         userEntity = { email: authUser.email, role: 'employee', has_onboarded: false };
       }
 
-      // Guarantee role is always a valid string — never undefined
-      if (!userEntity?.role) userEntity = { ...userEntity, role: 'employee' };
-
-      const mergedUser = { ...authUser, ...userEntity };
-      setUser(mergedUser);
-      setIsAuthenticated(true);
-      // Only flag onboarding if has_onboarded is explicitly false
-      setNeedsOnboarding(mergedUser.has_onboarded === false);
+      applyAuthUser(authUser, userEntity);
       setIsLoadingAuth(false);
       setAuthChecked(true);
     } catch (error) {
@@ -141,6 +166,52 @@ export const AuthProvider = ({ children }) => {
     onboardingComplete.current = true;
     setNeedsOnboarding(false);
     setUser(prev => prev ? { ...prev, has_onboarded: true, ...updatedUserFields } : prev);
+  };
+
+  const saveOnboardingProfile = async ({ fullName, contactPhone, pinHash }) => {
+    const authUser = await base44.auth.me();
+    const records = await base44.entities.User.filter({ email: authUser.email });
+
+    if (records?.length > 1) {
+      console.warn('[AuthContext] Duplicate User records during onboarding save.', {
+        email: authUser.email,
+        count: records.length,
+        ids: records.map(r => r.id),
+      });
+    }
+
+    const existing = pickBestUserRecord(records);
+    const existingRole = existing?.role;
+    const safeRole = isAdminRole(existingRole) ? existingRole : 'employee';
+    const payload = {
+      email: authUser.email,
+      full_name: fullName,
+      contact_phone: contactPhone,
+      pin_hash: pinHash,
+      has_onboarded: true,
+      status: existing?.status || 'active',
+      role: safeRole,
+    };
+
+    console.info('[AuthContext] Saving onboarding profile.', {
+      email: authUser.email,
+      userId: existing?.id || null,
+      role: safeRole,
+      hasExistingRecord: !!existing,
+    });
+
+    const saved = existing?.id
+      ? await base44.entities.User.update(existing.id, payload)
+      : await base44.entities.User.create(payload);
+
+    completeOnboarding({
+      ...saved,
+      full_name: fullName,
+      contact_phone: contactPhone,
+      pin_hash: pinHash,
+    });
+
+    return reloadCurrentUser();
   };
 
   const logout = (shouldRedirect = true) => {
@@ -176,6 +247,8 @@ export const AuthProvider = ({ children }) => {
       checkUserAuth,
       checkAppState,
       completeOnboarding,
+      reloadCurrentUser,
+      saveOnboardingProfile,
     }}>
       {children}
     </AuthContext.Provider>

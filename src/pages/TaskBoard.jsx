@@ -55,8 +55,8 @@ export default function TaskBoard() {
   const { data: employees = [] } = useQuery({
     queryKey: ['active-employees'],
     queryFn: async () => {
-      const users = await base44.entities.User.list();
-      return users.filter(u => u.status !== 'inactive');
+      const profiles = await base44.entities.EmployeeProfile.list();
+      return profiles.filter(u => u.status !== 'inactive');
     },
   });
 

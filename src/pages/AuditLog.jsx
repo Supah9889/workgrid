@@ -155,7 +155,7 @@ export default function AuditLog() {
 
   const { data: users = [] } = useQuery({
     queryKey: ['audit-users'],
-    queryFn: () => base44.entities.User.list(),
+    queryFn: () => base44.entities.EmployeeProfile.list(),
   });
 
   const emailToId = {};

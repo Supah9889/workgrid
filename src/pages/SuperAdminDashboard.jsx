@@ -172,8 +172,8 @@ export default function SuperAdminDashboard() {
   const { data: employees = [] } = useQuery({
     queryKey: ['dash-employees'],
     queryFn: async () => {
-      const users = await base44.entities.User.list();
-      return users.filter(u => u.role !== 'super_admin' && u.status !== 'inactive');
+      const profiles = await base44.entities.EmployeeProfile.list();
+      return profiles.filter(u => u.role !== 'super_admin' && u.status !== 'inactive');
     },
     staleTime: 120000,
   });

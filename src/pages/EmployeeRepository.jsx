@@ -84,7 +84,7 @@ export default function EmployeeRepository() {
 
   const { data: users = [], isLoading, isError } = useQuery({
     queryKey: ['users'],
-    queryFn: () => base44.entities.User.list(),
+    queryFn: () => base44.entities.EmployeeProfile.list(),
   });
 
   const { data: clockRecords = [] } = useQuery({

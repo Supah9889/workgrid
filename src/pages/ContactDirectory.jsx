@@ -124,7 +124,7 @@ export default function ContactDirectory() {
 
   const { data: allUsers = [], isLoading, isError } = useQuery({
     queryKey: ['contact-directory-users'],
-    queryFn: () => base44.entities.User.list(),
+    queryFn: () => base44.entities.EmployeeProfile.list(),
   });
 
   // Employees see only themselves; admins see all active users
@@ -145,7 +145,7 @@ export default function ContactDirectory() {
 
   const handleSave = async (entityId, updates) => {
     try {
-      await base44.entities.User.update(entityId, updates);
+      await base44.entities.EmployeeProfile.update(entityId, updates);
       queryClient.invalidateQueries({ queryKey: ['contact-directory-users'] });
       toast({ title: 'Contact info updated' });
     } catch (err) {

@@ -2,8 +2,8 @@ import { base44 } from '@/api/base44Client';
 
 async function getAdminUsers() {
   try {
-    const users = await base44.entities.User.list();
-    return users.filter(u => u.role === 'super_admin' || u.role === 'operator' || u.role === 'owner');
+    const profiles = await base44.entities.EmployeeProfile.list();
+    return profiles.filter(u => u.role === 'super_admin' || u.role === 'operator' || u.role === 'owner');
   } catch (e) {
     console.warn('[notificationService] Could not fetch admin users:', e);
     return [];

@@ -56,8 +56,8 @@ export default function PrivateChat({ user, markAsRead }) {
 
   useEffect(() => {
     loadConversations();
-    base44.entities.User.list().then(users =>
-      setEmployees(users.filter(u => u.email !== user?.email))
+    base44.entities.EmployeeProfile.list().then(profiles =>
+      setEmployees(profiles.filter(u => u.email !== user?.email))
     );
     const unsub = base44.entities.Conversation.subscribe(loadConversations);
     const msgUnsub = base44.entities.ChatMessage.subscribe((event) => {

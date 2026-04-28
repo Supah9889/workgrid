@@ -1,0 +1,58 @@
+{
+  "name": "EmployeeProfile",
+  "type": "object",
+  "properties": {
+    "email": {
+      "type": "string",
+      "description": "Employee login email (normalized lowercase)"
+    },
+    "full_name": {
+      "type": "string",
+      "description": "Display name"
+    },
+    "contact_phone": {
+      "type": "string",
+      "description": "Phone number for alerts"
+    },
+    "contact_email": {
+      "type": "string",
+      "description": "Alert email (overrides login email if set)"
+    },
+    "pin_hash": {
+      "type": "string",
+      "description": "SHA-256 hash of the employee's 4-digit PIN"
+    },
+    "has_onboarded": {
+      "type": "boolean",
+      "default": false,
+      "description": "True once the employee completes onboarding setup"
+    },
+    "role": {
+      "type": "string",
+      "enum": [
+        "employee",
+        "operator",
+        "super_admin",
+        "owner"
+      ],
+      "default": "employee",
+      "description": "App role for this profile"
+    },
+    "status": {
+      "type": "string",
+      "enum": [
+        "active",
+        "inactive"
+      ],
+      "default": "active",
+      "description": "Account status"
+    },
+    "photo_url": {
+      "type": "string",
+      "description": "Profile photo URL"
+    }
+  },
+  "required": [
+    "email"
+  ]
+}

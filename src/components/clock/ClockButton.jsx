@@ -59,8 +59,8 @@ export default function ClockButton({ user }) {
 
   const openPinModal = async (action) => {
     try {
-      const users = await base44.entities.User.filter({ email: user.email });
-      const fresh = users?.find(u => u.has_onboarded && u.pin_hash) || users?.[0];
+      const profiles = await base44.entities.EmployeeProfile.filter({ email: user.email });
+      const fresh = profiles?.find(u => u.has_onboarded && u.pin_hash) || profiles?.[0];
       const pinHash = fresh?.pin_hash || user.pin_hash || null;
       const isOnboarded = fresh?.has_onboarded ?? user.has_onboarded;
 
@@ -170,8 +170,8 @@ export default function ClockButton({ user }) {
 
   const notifyAdmins = async (punchType, distance) => {
     try {
-      const allUsers = await base44.entities.User.list();
-      const targets = allUsers.filter(u => u.role === 'super_admin' || u.role === 'operator');
+      const allProfiles = await base44.entities.EmployeeProfile.list();
+      const targets = allProfiles.filter(u => u.role === 'super_admin' || u.role === 'operator');
       for (const admin of targets) {
         await base44.entities.Notification.create({
           recipient_email: admin.email,

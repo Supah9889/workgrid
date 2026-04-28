@@ -29,12 +29,12 @@ export default function EmployeeManagement() {
 
   const { data: users = [], isLoading, isError } = useQuery({
     queryKey: ['users'],
-    queryFn: () => base44.entities.User.list(),
+    queryFn: () => base44.entities.EmployeeProfile.list(),
   });
 
   const changeRoleMutation = useMutation({
     mutationFn: async ({ userId, newRole }) => {
-      await base44.entities.User.update(userId, { role: newRole });
+      await base44.entities.EmployeeProfile.update(userId, { role: newRole });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });
@@ -48,7 +48,7 @@ export default function EmployeeManagement() {
 
   const deactivateMutation = useMutation({
     mutationFn: async (targetUser) => {
-      await base44.entities.User.update(targetUser.id, { status: 'inactive' });
+      await base44.entities.EmployeeProfile.update(targetUser.id, { status: 'inactive' });
 
       const tasks = await base44.entities.Task.filter({ assigned_employee: targetUser.email });
       for (const task of tasks) {
@@ -90,7 +90,7 @@ export default function EmployeeManagement() {
 
   const activateMutation = useMutation({
     mutationFn: async (targetUser) => {
-      await base44.entities.User.update(targetUser.id, { status: 'active' });
+      await base44.entities.EmployeeProfile.update(targetUser.id, { status: 'active' });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['users'] });

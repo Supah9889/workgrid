@@ -45,8 +45,8 @@ export default function PermissionsBoard() {
 
   // Load operator + employee users
   useEffect(() => {
-    base44.entities.User.list().then(users => {
-      const filtered = users.filter(u => u.role === 'operator' || u.role === 'employee');
+    base44.entities.EmployeeProfile.list().then(profiles => {
+      const filtered = profiles.filter(u => u.role === 'operator' || u.role === 'employee');
       setEmployees(filtered);
       setLoadingEmployees(false);
     });

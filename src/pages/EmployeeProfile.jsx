@@ -27,7 +27,7 @@ export default function EmployeeProfile() {
 
   const { data: employee, refetch: refetchEmp, isLoading: empLoading, isError: empError } = useQuery({
     queryKey: ['emp-profile', employeeId],
-    queryFn: () => base44.entities.User.list().then(users => users.find(u => u.id === employeeId)),
+    queryFn: () => base44.entities.EmployeeProfile.list().then(profiles => profiles.find(u => u.id === employeeId)),
     enabled: !!employeeId,
   });
 
@@ -63,7 +63,7 @@ export default function EmployeeProfile() {
   const todayTasks = tasks.filter(t => t.created_date?.startsWith(today));
 
   const handleSaveRole = async () => {
-    await base44.entities.User.update(employeeId, { role: editRole });
+    await base44.entities.EmployeeProfile.update(employeeId, { role: editRole });
     toast({ title: 'Role updated' });
     refetchEmp();
     setEditMode(false);
@@ -71,7 +71,7 @@ export default function EmployeeProfile() {
 
   const handleToggleStatus = async () => {
     const newStatus = employee.status === 'inactive' ? 'active' : 'inactive';
-    await base44.entities.User.update(employeeId, { status: newStatus });
+    await base44.entities.EmployeeProfile.update(employeeId, { status: newStatus });
     toast({ title: `Employee ${newStatus === 'active' ? 'reactivated' : 'deactivated'}` });
     refetchEmp();
   };

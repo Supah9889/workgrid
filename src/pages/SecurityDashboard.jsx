@@ -42,8 +42,8 @@ export default function SecurityDashboard() {
 
   useEffect(() => {
     if (!unlocked && user?.email) {
-      base44.entities.User.filter({ email: user.email }).then(users => {
-        if (users?.[0]) setExpectedHash(users[0].pin_hash);
+      base44.entities.EmployeeProfile.filter({ email: user.email }).then(profiles => {
+        if (profiles?.[0]) setExpectedHash(profiles[0].pin_hash);
       });
     }
   }, [unlocked, user?.email]);

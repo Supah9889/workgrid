@@ -21,7 +21,7 @@ export default function ClockRecords() {
 
   const { data: employees = [] } = useQuery({
     queryKey: ['employees-list'],
-    queryFn: () => base44.entities.User.list(),
+    queryFn: () => base44.entities.EmployeeProfile.list(),
   });
 
   useEffect(() => {

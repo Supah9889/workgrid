@@ -44,7 +44,7 @@ export default function PayrollSummary() {
   const { data: users = [], isLoading, isError } = useQuery({
     queryKey: ['payroll-users'],
     queryFn: async () => {
-      const all = await base44.entities.User.list();
+      const all = await base44.entities.EmployeeProfile.list();
       return all.filter(u => u.status !== 'inactive' && u.role === 'employee');
     },
   });

@@ -26,6 +26,17 @@ VITE_BASE44_APP_ID=cbef744a8545c389ef439ea6
 VITE_BASE44_APP_BASE_URL=https://my-to-do-list-81bfaad7.base44.app
 ```
 
+Optional map tile overrides:
+
+```
+VITE_MAP_TILE_URL=https://{s}.example.com/{z}/{x}/{y}.png
+VITE_MAP_TILE_ATTRIBUTION=Map data attribution HTML
+VITE_MAP_TILE_SUBDOMAINS=abcd
+VITE_MAP_TILE_MAX_ZOOM=19
+```
+
+By default the app uses CARTO Positron raster tiles with OpenStreetMap and CARTO attribution. Use the environment variables above if your deployment needs a licensed provider such as Mapbox, Stadia, Google, or a self-hosted tile service. Do not commit private map API keys.
+
 Run the app: `npm run dev`
 
 **Publish your changes**

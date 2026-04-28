@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
+import { MapContainer, Marker, Popup } from 'react-leaflet';
 import { formatDistanceToNow } from 'date-fns';
 import 'leaflet/dist/leaflet.css';
 import L from 'leaflet';
 import { getPunchInTime } from '@/lib/clockRecords';
+import AppTileLayer from '@/components/maps/AppTileLayer';
+import MapTileErrorBanner from '@/components/maps/MapTileErrorBanner';
 
 // Fix leaflet default icons
 delete L.Icon.Default.prototype._getIconUrl;
@@ -27,6 +29,7 @@ function createEmpIcon(name) {
 export default function EmployeeMap({ locationRecords, clockedInRecords, tasksByEmployee }) {
   const [center, setCenter] = useState([40.7128, -74.0060]);
   const [mounted, setMounted] = useState(false);
+  const [tileError, setTileError] = useState(false);
 
   useEffect(() => {
     setMounted(true);
@@ -42,16 +45,15 @@ export default function EmployeeMap({ locationRecords, clockedInRecords, tasksBy
   if (!mounted) return null;
 
   return (
+    <div className="relative">
+      {tileError && <MapTileErrorBanner />}
     <MapContainer
       center={center}
       zoom={13}
       style={{ height: '480px', width: '100%', borderRadius: '12px' }}
       key={center.toString()}
     >
-      <TileLayer
-        attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-        url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-      />
+      <AppTileLayer onTileError={() => setTileError(true)} />
       {locationRecords.map(loc => {
         const clockRec = clockedInRecords.find(r => r.employee_email === loc.employee_email);
         const tasks = tasksByEmployee?.[loc.employee_email] || [];
@@ -87,5 +89,6 @@ export default function EmployeeMap({ locationRecords, clockedInRecords, tasksBy
         );
       })}
     </MapContainer>
+    </div>
   );
 }

@@ -1,8 +1,10 @@
 import { useEffect, useState, useRef } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
+import { MapContainer, Marker, Popup, Polyline, useMap } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
 import { MapPin, Loader2, AlertCircle, Navigation } from 'lucide-react';
+import AppTileLayer from '@/components/maps/AppTileLayer';
+import MapTileErrorBanner from '@/components/maps/MapTileErrorBanner';
 
 // Fix leaflet default icon paths
 delete L.Icon.Default.prototype._getIconUrl;
@@ -65,6 +67,7 @@ export default function DeliveryMap({ tasks }) {
   const [destMarkers, setDestMarkers] = useState([]);
   const [loading, setLoading] = useState(true);
   const [geocodeErrors, setGeocodeErrors] = useState(0);
+  const [tileError, setTileError] = useState(false);
   const geocacheRef = useRef({});
 
   const activeTasks = tasks.filter(t =>
@@ -169,15 +172,14 @@ export default function DeliveryMap({ tasks }) {
 
       {/* Map */}
       {!loading && activeTasks.length > 0 && (
+        <div className="relative">
+          {tileError && <MapTileErrorBanner />}
         <MapContainer
           center={allPoints.length > 0 ? allPoints[0] : defaultCenter}
           zoom={10}
           style={{ height: '460px', width: '100%' }}
         >
-          <TileLayer
-            attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
-            url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-          />
+          <AppTileLayer onTileError={() => setTileError(true)} />
           <BoundsController points={allPoints} />
 
           {/* Destination markers */}
@@ -244,6 +246,7 @@ export default function DeliveryMap({ tasks }) {
             );
           })}
         </MapContainer>
+        </div>
       )}
     </div>
   );

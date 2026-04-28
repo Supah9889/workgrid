@@ -52,14 +52,14 @@
       "$or": [
         { "data.employee_email": "{{user.email}}" },
         { "user_condition": { "role": "admin" } },
-        { "user_condition": { "data.role": { "$in": ["owner", "super_admin"] } } }
+        { "user_condition": { "data.role": { "$in": ["owner", "super_admin", "operator"] } } }
       ]
     },
     "delete": {
       "$or": [
         { "data.employee_email": "{{user.email}}" },
         { "user_condition": { "role": "admin" } },
-        { "user_condition": { "data.role": { "$in": ["owner", "super_admin"] } } }
+        { "user_condition": { "data.role": { "$in": ["owner", "super_admin", "operator"] } } }
       ]
     }
   }

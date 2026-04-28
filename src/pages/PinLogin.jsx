@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
+import { getEmployeeProfileByEmail } from '@/lib/employeeProfiles';
 import { Hexagon } from 'lucide-react';
 
 async function verifyPin(enteredPin, storedHash) {
@@ -75,15 +76,23 @@ export default function PinLogin() {
 
     if (val.length === 4) {
       setChecking(true);
-      const ok = await verifyPin(val, user?.pin_hash);
+      const profile = await getEmployeeProfileByEmail(user?.email, { allowLegacyFallback: true });
+      if (!profile?.pin_hash) {
+        console.error('[PinLogin] PIN missing', { email: user?.email });
+        setError('PIN setup is missing. Please contact your manager.');
+        setChecking(false);
+        return;
+      }
+      const ok = await verifyPin(val, profile.pin_hash);
 
       if (ok) {
         sessionStorage.setItem('pin_verified', 'true');
-        const role = user?.role || 'employee';
+        const role = profile?.role || user?.role || 'employee';
         const dest = (role === 'super_admin' || role === 'owner' || role === 'operator')
           ? '/dashboard' : '/my-tasks';
         navigate(dest, { replace: true });
       } else {
+        console.error('[PinLogin] PIN mismatch', { email: user?.email });
         const next = attempts + 1;
         setAttempts(next);
         if (next < MAX_ATTEMPTS) setError('Incorrect PIN');

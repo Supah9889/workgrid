@@ -5,10 +5,10 @@ import { differenceInSeconds } from 'date-fns';
 import { logActivity } from '@/lib/activityLogger';
 import { notifyClockIn, notifyClockOut, notifyOutOfBoundsPunch } from '@/lib/notificationService';
 import { isOpenClockRecord } from '@/lib/clockRecords';
+import { getEmployeeProfileByEmail, listEmployeeProfiles, normalizeEmail } from '@/lib/employeeProfiles';
 import PinModal from '@/components/clock/PinModal';
 import { Loader2, Coffee, LogIn, LogOut } from 'lucide-react';
 
-// Haversine distance in miles
 function distanceMiles(lat1, lng1, lat2, lng2) {
   const R = 3958.8;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -56,33 +56,68 @@ export default function ClockButton({ user }) {
   const [pendingAction, setPendingAction] = useState(null);
   const [expectedHash, setExpectedHash] = useState(null);
   const [appSettings, setAppSettings] = useState(null);
+  const [profile, setProfile] = useState(null);
+  const locationIntervalRef = useRef(null);
+
+  useEffect(() => {
+    if (!user?.email) return;
+    loadProfileAndCurrentRecord();
+    loadAppSettings();
+    return () => {
+      if (locationIntervalRef.current) clearInterval(locationIntervalRef.current);
+    };
+  }, [user?.email]);
+
+  const loadProfileAndCurrentRecord = async () => {
+    try {
+      const fresh = await getEmployeeProfileByEmail(user.email);
+      setProfile(fresh || user);
+    } catch {
+      setProfile(user);
+    }
+    await loadCurrentRecord();
+  };
+
+  const requireClockReadyProfile = async (action) => {
+    const normalizedEmail = normalizeEmail(user?.email);
+    let fresh = await getEmployeeProfileByEmail(normalizedEmail, { allowLegacyFallback: false });
+    if (!fresh && user?._profileSource === 'User') {
+      console.warn('[ClockButton] Using legacy User profile fallback for clock action.', {
+        email: normalizedEmail,
+        action,
+      });
+      fresh = user;
+    }
+
+    if (!fresh) {
+      console.error('[ClockButton] profile missing', { email: normalizedEmail, action });
+      throw new Error('Your employee profile is missing. Finish setup or contact an administrator.');
+    }
+    if (fresh.has_onboarded !== true) {
+      console.error('[ClockButton] profile lookup failed', {
+        email: normalizedEmail,
+        action,
+        reason: 'not_onboarded',
+      });
+      throw new Error('Finish setup before using the time clock.');
+    }
+    if (!fresh.pin_hash) {
+      console.error('[ClockButton] PIN missing', { email: normalizedEmail, action });
+      throw new Error('Set your 4-digit PIN before using the time clock.');
+    }
+    if (fresh.status === 'inactive') {
+      throw new Error('Your employee profile is inactive. Contact an administrator.');
+    }
+    return fresh;
+  };
 
   const openPinModal = async (action) => {
     try {
-      const profiles = await base44.entities.EmployeeProfile.filter({ email: user.email });
-      const fresh = profiles?.find(u => u.has_onboarded && u.pin_hash) || profiles?.[0];
-      const pinHash = fresh?.pin_hash || user.pin_hash || null;
-      const isOnboarded = fresh?.has_onboarded ?? user.has_onboarded;
-
-      if (isOnboarded !== true || !pinHash) {
-        console.warn('[ClockButton] Clock action blocked by incomplete setup.', {
-          email: user.email,
-          action,
-          hasOnboarded: isOnboarded,
-          hasPin: !!pinHash,
-        });
-        toast({
-          title: 'Finish setup first',
-          description: 'Your profile and 4-digit PIN must be saved before clocking in.',
-          variant: 'destructive',
-        });
-        return;
-      }
-
-      setExpectedHash(pinHash);
+      const fresh = await requireClockReadyProfile(action);
+      setProfile(fresh);
+      setExpectedHash(fresh.pin_hash);
       setPendingAction(action);
     } catch (err) {
-      console.error('[ClockButton] Could not verify setup before clock action:', err);
       toast({
         title: 'Could not verify setup',
         description: err.message || 'Check your connection and try again.',
@@ -90,22 +125,16 @@ export default function ClockButton({ user }) {
       });
     }
   };
-  const locationIntervalRef = useRef(null);
-
-  useEffect(() => {
-    if (!user?.email) return;
-    loadCurrentRecord();
-    loadAppSettings();
-    return () => { if (locationIntervalRef.current) clearInterval(locationIntervalRef.current); };
-  }, [user?.email]);
 
   const loadCurrentRecord = async () => {
     const today = new Date().toISOString().split('T')[0];
     try {
-      const records = await base44.entities.ClockRecord.filter({ employee_email: user.email, date: today });
+      const records = await base44.entities.ClockRecord.filter({ employee_email: normalizeEmail(user.email), date: today });
       const open = records.find(isOpenClockRecord);
       setClockRecord(open || null);
       if (open) startLocationTracking(open.id);
+    } catch (error) {
+      console.error('[ClockButton] ClockRecord lookup failed:', error);
     } finally {
       setLoading(false);
     }
@@ -113,11 +142,12 @@ export default function ClockButton({ user }) {
 
   const getOwnedOpenRecord = async () => {
     const today = new Date().toISOString().split('T')[0];
-    const records = await base44.entities.ClockRecord.filter({ employee_email: user.email, date: today });
+    const records = await base44.entities.ClockRecord.filter({ employee_email: normalizeEmail(user.email), date: today });
     const open = records.find(isOpenClockRecord);
-    if (!open || open.id !== clockRecord?.id) {
+    if (!open) {
       throw new Error('No active clock record found. Refresh and try again.');
     }
+    setClockRecord(open);
     return open;
   };
 
@@ -125,17 +155,21 @@ export default function ClockButton({ user }) {
     try {
       const settings = await base44.entities.AppSettings.list();
       if (settings.length > 0) setAppSettings(settings[0]);
-    } catch { /* entity may not exist yet */ }
+    } catch {
+      /* AppSettings may not be available in every environment. */
+    }
   };
 
   const startLocationTracking = (recordId) => {
     if (!navigator.geolocation) return;
+    if (locationIntervalRef.current) clearInterval(locationIntervalRef.current);
+
     const push = () => {
       navigator.geolocation.getCurrentPosition(pos => {
-        base44.entities.LocationRecord.filter({ employee_email: user.email }).then(async existing => {
+        base44.entities.LocationRecord.filter({ employee_email: normalizeEmail(user.email) }).then(async existing => {
           const data = {
-            employee_email: user.email,
-            employee_name: user.full_name || user.email,
+            employee_email: normalizeEmail(user.email),
+            employee_name: profile?.full_name || user.full_name || user.email,
             latitude: pos.coords.latitude,
             longitude: pos.coords.longitude,
             updated_at: new Date().toISOString(),
@@ -154,7 +188,8 @@ export default function ClockButton({ user }) {
 
   const stopLocationTracking = () => {
     if (locationIntervalRef.current) clearInterval(locationIntervalRef.current);
-    base44.entities.LocationRecord.filter({ employee_email: user.email })
+    locationIntervalRef.current = null;
+    base44.entities.LocationRecord.filter({ employee_email: normalizeEmail(user.email) })
       .then(recs => Promise.all(recs.map(r => base44.entities.LocationRecord.delete(r.id))))
       .catch(err => console.warn('[ClockButton] Live location cleanup failed:', err));
   };
@@ -170,28 +205,41 @@ export default function ClockButton({ user }) {
 
   const notifyAdmins = async (punchType, distance) => {
     try {
-      const allProfiles = await base44.entities.EmployeeProfile.list();
-      const targets = allProfiles.filter(u => u.role === 'super_admin' || u.role === 'operator');
+      const allProfiles = await listEmployeeProfiles();
+      const targets = allProfiles.filter(u => u.role === 'super_admin' || u.role === 'operator' || u.role === 'owner');
       for (const admin of targets) {
         await base44.entities.Notification.create({
           recipient_email: admin.email,
           title: 'Out-of-bounds punch detected',
-          message: `${user.full_name || user.email} punched ${punchType} from ${distance} miles from geofence center.`,
+          message: `${profile?.full_name || user.full_name || user.email} punched ${punchType} from ${distance} miles from geofence center.`,
           type: 'warning',
         });
       }
-    } catch { /* non-critical */ }
+    } catch {
+      /* Non-critical. */
+    }
   };
 
   const executePunchIn = async () => {
+    const fresh = await requireClockReadyProfile('punch_in');
+    setProfile(fresh);
     const today = new Date().toISOString().split('T')[0];
+    const existing = await base44.entities.ClockRecord.filter({ employee_email: fresh.email, date: today });
+    const open = existing.find(isOpenClockRecord);
+    if (open) {
+      setClockRecord(open);
+      startLocationTracking(open.id);
+      toast({ title: 'Already punched in', description: 'Your open clock record is active.' });
+      return;
+    }
+
     let pos = null;
     try { pos = await capturePosition(); } catch(e) { console.warn('GPS failed', e); }
     const geo = checkGeofence(pos?.lat, pos?.lng);
     try {
       const record = await base44.entities.ClockRecord.create({
-        employee_email: user.email,
-        employee_name: user.full_name || user.email,
+        employee_email: fresh.email,
+        employee_name: fresh.full_name || fresh.email,
         date: today,
         punch_in_time: new Date().toISOString(),
         punch_in_lat: pos?.lat ?? null,
@@ -201,52 +249,78 @@ export default function ClockButton({ user }) {
       });
       setClockRecord(record);
       startLocationTracking(record.id);
-      await notifyClockIn(user);
-      if (!geo.in_bounds) await notifyOutOfBoundsPunch(user, 'in', geo.distance);
+      await notifyClockIn(fresh);
+      if (!geo.in_bounds) {
+        await notifyOutOfBoundsPunch(fresh, 'in', geo.distance);
+        await notifyAdmins('in', geo.distance);
+      }
       await logActivity(
         'employee_clocked_in',
-        `${user.full_name || user.email} punched in${!geo.in_bounds ? ' ⚠️ OUT OF BOUNDS' : ''}`,
-        user.email, user.full_name, { entity_id: record.id, entity_type: 'ClockRecord' }
+        `${fresh.full_name || fresh.email} punched in${!geo.in_bounds ? ' outside geofence' : ''}`,
+        fresh.email, fresh.full_name, { entity_id: record.id, entity_type: 'ClockRecord' }
       );
-      toast({ title: geo.in_bounds ? 'Punched in!' : 'Punched in — outside geofence area' });
+      toast({ title: geo.in_bounds ? 'Punched in' : 'Punched in outside geofence area' });
     } catch(e) {
-      console.error('ClockRecord create failed:', e);
+      console.error('ClockRecord.create failed:', e);
       throw e;
     }
   };
 
   const executeLunchStart = async () => {
     const activeRecord = await getOwnedOpenRecord();
+    if (activeRecord.lunch_start && !activeRecord.lunch_end) {
+      throw new Error('Lunch is already started.');
+    }
+    if (activeRecord.lunch_start && activeRecord.lunch_end) {
+      throw new Error('Lunch has already been recorded for this shift.');
+    }
     const pos = await capturePosition();
     const now = new Date().toISOString();
-    const updated = await base44.entities.ClockRecord.update(activeRecord.id, {
-      lunch_start: now,
-      lunch_start_lat: pos?.lat ?? null,
-      lunch_start_lng: pos?.lng ?? null,
-    });
-    setClockRecord(r => ({ ...r, ...updated }));
-    toast({ title: 'Lunch started' });
+    try {
+      const updated = await base44.entities.ClockRecord.update(activeRecord.id, {
+        lunch_start: now,
+        lunch_start_lat: pos?.lat ?? null,
+        lunch_start_lng: pos?.lng ?? null,
+      });
+      setClockRecord(r => ({ ...r, ...updated }));
+      toast({ title: 'Lunch started' });
+    } catch (error) {
+      console.error('ClockRecord.update failed:', error);
+      throw error;
+    }
   };
 
   const executeLunchEnd = async () => {
     const activeRecord = await getOwnedOpenRecord();
+    if (!activeRecord.lunch_start) {
+      throw new Error('Start lunch before ending lunch.');
+    }
+    if (activeRecord.lunch_end) {
+      throw new Error('Lunch has already ended.');
+    }
     const now = new Date();
     const pos = await capturePosition();
-    const lunchMins = activeRecord.lunch_start
-      ? Math.round((now - new Date(activeRecord.lunch_start)) / 60000)
-      : 0;
-    const updated = await base44.entities.ClockRecord.update(activeRecord.id, {
-      lunch_end: now.toISOString(),
-      lunch_end_lat: pos?.lat ?? null,
-      lunch_end_lng: pos?.lng ?? null,
-      total_lunch_minutes: lunchMins,
-    });
-    setClockRecord(r => ({ ...r, ...updated }));
-    toast({ title: `Back from lunch — ${lunchMins} min` });
+    const lunchMins = Math.max(0, Math.round((now - new Date(activeRecord.lunch_start)) / 60000));
+    try {
+      const updated = await base44.entities.ClockRecord.update(activeRecord.id, {
+        lunch_end: now.toISOString(),
+        lunch_end_lat: pos?.lat ?? null,
+        lunch_end_lng: pos?.lng ?? null,
+        total_lunch_minutes: lunchMins,
+      });
+      setClockRecord(r => ({ ...r, ...updated }));
+      toast({ title: `Back from lunch - ${lunchMins} min` });
+    } catch (error) {
+      console.error('ClockRecord.update failed:', error);
+      throw error;
+    }
   };
 
   const executePunchOut = async () => {
     const activeRecord = await getOwnedOpenRecord();
+    if (activeRecord.lunch_start && !activeRecord.lunch_end) {
+      throw new Error('End lunch before punching out.');
+    }
     const now = new Date();
     const pos = await capturePosition();
     const geo = checkGeofence(pos?.lat, pos?.lng);
@@ -259,27 +333,36 @@ export default function ClockButton({ user }) {
     const totalHours = Math.max(0, Math.round(((totalSecs - lunchSecs) / 3600) * 100) / 100);
     const wasFlagged = activeRecord.flagged || !geo.in_bounds;
 
-    await base44.entities.ClockRecord.update(activeRecord.id, {
-      punch_out_time: now.toISOString(),
-      punch_out_lat: pos?.lat ?? null,
-      punch_out_lng: pos?.lng ?? null,
-      punch_out_in_bounds: geo.in_bounds,
-      total_hours: totalHours,
-      flagged: wasFlagged,
-    });
+    try {
+      await base44.entities.ClockRecord.update(activeRecord.id, {
+        punch_out_time: now.toISOString(),
+        punch_out_lat: pos?.lat ?? null,
+        punch_out_lng: pos?.lng ?? null,
+        punch_out_in_bounds: geo.in_bounds,
+        total_hours: totalHours,
+        flagged: wasFlagged,
+      });
+    } catch (error) {
+      console.error('ClockRecord.update failed:', error);
+      throw error;
+    }
 
     stopLocationTracking();
     setClockRecord(null);
 
-    await notifyClockOut(user, totalHours);
-    if (!geo.in_bounds) await notifyOutOfBoundsPunch(user, 'out', geo.distance);
+    const fresh = profile || user;
+    await notifyClockOut(fresh, totalHours);
+    if (!geo.in_bounds) {
+      await notifyOutOfBoundsPunch(fresh, 'out', geo.distance);
+      await notifyAdmins('out', geo.distance);
+    }
 
     await logActivity(
       'employee_clocked_out',
-      `${user.full_name || user.email} punched out (${totalHours}h)${!geo.in_bounds ? ' ⚠️ OUT OF BOUNDS' : ''}`,
-      user.email, user.full_name
+      `${fresh.full_name || fresh.email} punched out (${totalHours}h)${!geo.in_bounds ? ' outside geofence' : ''}`,
+      fresh.email, fresh.full_name
     );
-    toast({ title: `Punched out — ${totalHours}h worked` });
+    toast({ title: `Punched out - ${totalHours}h worked` });
   };
 
   const handlePinSuccess = async () => {
@@ -300,16 +383,17 @@ export default function ClockButton({ user }) {
         lunch_end: 'End lunch',
       };
       const label = ACTION_LABELS[action] || 'Action';
-      // Classify the error for a meaningful message
       let description = 'An unexpected error occurred. Please try again.';
       const message = e?.message?.toLowerCase() || '';
       if (e?.status === 401 || e?.status === 403 || message.includes('unauthorized') || message.includes('forbidden')) {
+        console.error('[ClockButton] RLS/permission blocked', { action, message: e?.message });
         description = action === 'punch_in'
           ? 'Your account does not have permission to create a clock record. Contact your administrator.'
           : 'Your account does not have permission to update this clock record. Contact your administrator.';
       } else if (message.includes('network') || message.includes('fetch')) {
-        description = 'Network error — check your connection and try again.';
+        description = 'Network error - check your connection and try again.';
       } else if (message.includes('permission') || message.includes('denied')) {
+        console.error('[ClockButton] RLS/permission blocked', { action, message: e?.message });
         description = action === 'punch_in'
           ? 'Clock-in was denied. Contact your administrator if this continues.'
           : 'This clock update was denied. Contact your administrator if this continues.';
@@ -355,7 +439,6 @@ export default function ClockButton({ user }) {
 
       <div className={`rounded-xl border-2 ${st.border} ${st.bg} p-4 mb-5 transition-all`}>
         <div className="flex items-center justify-between gap-3">
-          {/* Status left side */}
           <div className="flex items-center gap-3">
             <div className="relative">
               <div className={`w-10 h-10 rounded-full flex items-center justify-center ${st.bg}`}>
@@ -378,7 +461,6 @@ export default function ClockButton({ user }) {
             </div>
           </div>
 
-          {/* Action buttons right side */}
           <div className="flex items-center gap-2">
             {actionLoading ? (
               <Loader2 className="w-5 h-5 text-slate-400 animate-spin" />

@@ -5,6 +5,7 @@ import { format, startOfWeek, endOfWeek, startOfMonth, endOfMonth, eachDayOfInte
 import { DollarSign, Download, AlertTriangle } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
+import { listEmployeeProfiles } from '@/lib/employeeProfiles';
 
 function exportCSV(rows, filename) {
   const headers = Object.keys(rows[0] || {}).join(',');
@@ -44,7 +45,7 @@ export default function PayrollSummary() {
   const { data: users = [], isLoading, isError } = useQuery({
     queryKey: ['payroll-users'],
     queryFn: async () => {
-      const all = await base44.entities.EmployeeProfile.list();
+      const all = await listEmployeeProfiles();
       return all.filter(u => u.status !== 'inactive' && u.role === 'employee');
     },
   });

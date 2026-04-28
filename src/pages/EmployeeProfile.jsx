@@ -11,6 +11,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { StatusBadge, PriorityBadge } from '@/components/tasks/TaskBadges';
 import { useToast } from '@/components/ui/use-toast';
 import { getPunchInTime, getPunchOutTime, isOpenClockRecord } from '@/lib/clockRecords';
+import { listEmployeeProfiles } from '@/lib/employeeProfiles';
 
 const STATUS_STYLES = {
   active: 'bg-emerald-100 text-emerald-700 border-emerald-200',
@@ -27,7 +28,7 @@ export default function EmployeeProfile() {
 
   const { data: employee, refetch: refetchEmp, isLoading: empLoading, isError: empError } = useQuery({
     queryKey: ['emp-profile', employeeId],
-    queryFn: () => base44.entities.EmployeeProfile.list().then(profiles => profiles.find(u => u.id === employeeId)),
+    queryFn: () => listEmployeeProfiles().then(users => users.find(u => u.id === employeeId)),
     enabled: !!employeeId,
   });
 

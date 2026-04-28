@@ -9,6 +9,7 @@ import { Search, Plus, Mail, Phone, UserCircle } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AddEmployeeDialog from '@/components/employees/AddEmployeeDialog';
 import { isOpenClockRecord } from '@/lib/clockRecords';
+import { listEmployeeProfiles } from '@/lib/employeeProfiles';
 
 const ROLE_STYLES = {
   super_admin: 'bg-purple-100 text-purple-700 border-purple-200',
@@ -84,7 +85,7 @@ export default function EmployeeRepository() {
 
   const { data: users = [], isLoading, isError } = useQuery({
     queryKey: ['users'],
-    queryFn: () => base44.entities.EmployeeProfile.list(),
+    queryFn: () => listEmployeeProfiles(),
   });
 
   const { data: clockRecords = [] } = useQuery({

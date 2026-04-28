@@ -8,6 +8,7 @@ import { Calendar, RefreshCw } from 'lucide-react';
 import LiveStatusList from '@/components/clock/LiveStatusList';
 import DailyLog from '@/components/clock/DailyLog';
 import { isOpenClockRecord } from '@/lib/clockRecords';
+import { listEmployeeProfiles } from '@/lib/employeeProfiles';
 
 export default function ClockRecords() {
   const queryClient = useQueryClient();
@@ -21,7 +22,7 @@ export default function ClockRecords() {
 
   const { data: employees = [] } = useQuery({
     queryKey: ['employees-list'],
-    queryFn: () => base44.entities.EmployeeProfile.list(),
+    queryFn: () => listEmployeeProfiles(),
   });
 
   useEffect(() => {

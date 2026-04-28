@@ -12,6 +12,7 @@ import TaskRow from '@/components/tasks/TaskRow';
 import CreateTaskDialog from '@/components/tasks/CreateTaskDialog';
 import EditTaskDialog from '@/components/tasks/EditTaskDialog';
 import DeliveryMap from '@/components/tasks/DeliveryMap';
+import { listEmployeeProfiles } from '@/lib/employeeProfiles';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 
 export default function TaskBoard() {
@@ -55,8 +56,8 @@ export default function TaskBoard() {
   const { data: employees = [] } = useQuery({
     queryKey: ['active-employees'],
     queryFn: async () => {
-      const profiles = await base44.entities.EmployeeProfile.list();
-      return profiles.filter(u => u.status !== 'inactive');
+      const users = await listEmployeeProfiles();
+      return users.filter(u => u.status !== 'inactive');
     },
   });
 

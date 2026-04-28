@@ -32,6 +32,7 @@ export default function PinModal({ title = 'Enter Your PIN', onSuccess, onCancel
       if (hash === expectedHash) {
         onSuccess();
       } else {
+        console.error('[PinModal] PIN mismatch');
         setError('Incorrect PIN');
         setTimeout(() => {
           setDigits([]);

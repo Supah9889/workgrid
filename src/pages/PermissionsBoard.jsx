@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { usePermissions } from '@/lib/permissions.jsx';
 import { DEFAULT_PERMISSIONS as ROLE_DEFAULTS, ROLE_ALLOWED_PERMISSIONS } from '@/lib/permissions.jsx';
+import { listEmployeeProfiles } from '@/lib/employeeProfiles';
 import { useToast } from '@/components/ui/use-toast';
 import { Switch } from '@/components/ui/switch';
 import { Card, CardContent, CardHeader } from '@/components/ui/card';
@@ -45,8 +46,8 @@ export default function PermissionsBoard() {
 
   // Load operator + employee users
   useEffect(() => {
-    base44.entities.EmployeeProfile.list().then(profiles => {
-      const filtered = profiles.filter(u => u.role === 'operator' || u.role === 'employee');
+    listEmployeeProfiles().then(users => {
+      const filtered = users.filter(u => u.role === 'operator' || u.role === 'employee');
       setEmployees(filtered);
       setLoadingEmployees(false);
     });

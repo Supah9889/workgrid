@@ -6,6 +6,7 @@ import { format } from 'date-fns';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
 import { AlertTriangle, MapPin, ChevronDown, ChevronUp, Filter } from 'lucide-react';
+import { listEmployeeProfiles } from '@/lib/employeeProfiles';
 
 function distanceMiles(lat1, lng1, lat2, lng2) {
   const R = 3958.8;
@@ -155,7 +156,7 @@ export default function AuditLog() {
 
   const { data: users = [] } = useQuery({
     queryKey: ['audit-users'],
-    queryFn: () => base44.entities.EmployeeProfile.list(),
+    queryFn: () => listEmployeeProfiles(),
   });
 
   const emailToId = {};

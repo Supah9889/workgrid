@@ -4,39 +4,34 @@
   "properties": {
     "email": {
       "type": "string",
-      "description": "Employee login email (normalized lowercase)"
+      "description": "Normalized Base44 auth email for this app profile"
     },
     "full_name": {
-      "type": "string",
-      "description": "Display name"
+      "type": "string"
     },
     "contact_phone": {
-      "type": "string",
-      "description": "Phone number for alerts"
+      "type": "string"
     },
     "contact_email": {
       "type": "string",
-      "description": "Alert email (overrides login email if set)"
+      "description": "Alert email override; login email is used when blank"
     },
     "pin_hash": {
-      "type": "string",
-      "description": "SHA-256 hash of the employee's 4-digit PIN"
+      "type": "string"
     },
     "has_onboarded": {
       "type": "boolean",
-      "default": false,
-      "description": "True once the employee completes onboarding setup"
+      "default": false
     },
     "role": {
       "type": "string",
       "enum": [
-        "employee",
-        "operator",
+        "owner",
         "super_admin",
-        "owner"
+        "operator",
+        "employee"
       ],
-      "default": "employee",
-      "description": "App role for this profile"
+      "default": "employee"
     },
     "status": {
       "type": "string",
@@ -44,15 +39,52 @@
         "active",
         "inactive"
       ],
-      "default": "active",
-      "description": "Account status"
+      "default": "active"
     },
     "photo_url": {
-      "type": "string",
-      "description": "Profile photo URL"
+      "type": "string"
     }
   },
   "required": [
     "email"
-  ]
+  ],
+  "rls": {
+    "create": {
+      "$or": [
+        {
+          "$and": [
+            { "data.email": "{{user.email}}" },
+            { "data.role": "employee" }
+          ]
+        },
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "data.role": { "$in": ["owner", "super_admin"] } } }
+      ]
+    },
+    "read": {
+      "$or": [
+        { "data.email": "{{user.email}}" },
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "data.role": { "$in": ["owner", "super_admin", "operator"] } } }
+      ]
+    },
+    "update": {
+      "$or": [
+        {
+          "$and": [
+            { "data.email": "{{user.email}}" },
+            { "data.role": "employee" }
+          ]
+        },
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "data.role": { "$in": ["owner", "super_admin"] } } }
+      ]
+    },
+    "delete": {
+      "$or": [
+        { "user_condition": { "role": "admin" } },
+        { "user_condition": { "data.role": { "$in": ["owner", "super_admin"] } } }
+      ]
+    }
+  }
 }

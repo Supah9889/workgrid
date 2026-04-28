@@ -8,6 +8,7 @@ import { PriorityBadge, StatusBadge } from '@/components/tasks/TaskBadges';
 import CreateTaskDialog from '@/components/tasks/CreateTaskDialog';
 import { format } from 'date-fns';
 import { isOpenClockRecord } from '@/lib/clockRecords';
+import { listEmployeeProfiles } from '@/lib/employeeProfiles';
 
 function TaskCard({ task, employees }) {
   const [expanded, setExpanded] = useState(false);
@@ -172,8 +173,8 @@ export default function SuperAdminDashboard() {
   const { data: employees = [] } = useQuery({
     queryKey: ['dash-employees'],
     queryFn: async () => {
-      const profiles = await base44.entities.EmployeeProfile.list();
-      return profiles.filter(u => u.role !== 'super_admin' && u.status !== 'inactive');
+      const users = await listEmployeeProfiles();
+      return users.filter(u => u.role !== 'super_admin' && u.status !== 'inactive');
     },
     staleTime: 120000,
   });

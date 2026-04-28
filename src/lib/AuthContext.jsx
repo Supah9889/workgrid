@@ -1,48 +1,14 @@
-import React, { createContext, useState, useContext, useEffect, useRef } from 'react';
+import React, { createContext, useState, useContext, useEffect } from 'react';
 import { base44 } from '@/api/base44Client';
 import { appParams } from '@/lib/app-params';
 import { createAxiosClient } from '@base44/sdk/dist/utils/axios-client';
+import {
+  ensureEmployeeProfileForAuthUser,
+  normalizeEmail,
+  saveOwnEmployeeProfile,
+} from '@/lib/employeeProfiles';
 
 const AuthContext = createContext();
-
-function isAdminRole(role) {
-  return role === 'owner' || role === 'super_admin' || role === 'operator';
-}
-
-function normalizeEmail(email) {
-  return (email || '').toLowerCase().trim();
-}
-
-function isEmployeeSetupRecord(record, email) {
-  return normalizeEmail(record?.email) === normalizeEmail(email) && (!record.role || record.role === 'employee');
-}
-
-function pickBestProfileRecord(records = []) {
-  return [...records].sort((a, b) => {
-    const aReady = a.has_onboarded && a.pin_hash ? 1 : 0;
-    const bReady = b.has_onboarded && b.pin_hash ? 1 : 0;
-    if (aReady !== bReady) return bReady - aReady;
-
-    const aActive = a.status !== 'inactive' ? 1 : 0;
-    const bActive = b.status !== 'inactive' ? 1 : 0;
-    if (aActive !== bActive) return bActive - aActive;
-
-    return new Date(b.updated_date || b.created_date || 0) - new Date(a.updated_date || a.created_date || 0);
-  })[0] || null;
-}
-
-function pickOnboardingTarget(records = [], email) {
-  const ownEmployeeRecords = records.filter(r => isEmployeeSetupRecord(r, email));
-  const normalizedEmail = normalizeEmail(email);
-  return pickBestProfileRecord(ownEmployeeRecords) || pickBestProfileRecord(records.filter(r => normalizeEmail(r.email) === normalizedEmail));
-}
-
-function getErrorInfo(error) {
-  return {
-    message: error?.message || String(error),
-    status: error?.status || error?.response?.status || error?.data?.status || null,
-  };
-}
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
@@ -53,62 +19,28 @@ export const AuthProvider = ({ children }) => {
   const [authChecked, setAuthChecked] = useState(false);
   const [appPublicSettings, setAppPublicSettings] = useState(null);
   const [needsOnboarding, setNeedsOnboarding] = useState(false);
-  const onboardingComplete = useRef(false);
 
   useEffect(() => {
     checkAppState();
   }, []);
 
   const loadEmployeeProfile = async (authUser) => {
-    const normalizedEmail = normalizeEmail(authUser.email);
-
-    let results = [];
-    try {
-      results = await base44.entities.EmployeeProfile.filter({ email: normalizedEmail });
-    } catch (err) {
-      console.warn('[AuthContext] EmployeeProfile.filter failed:', err);
-    }
-
-    if (results?.length > 1) {
-      console.warn('[AuthContext] Duplicate EmployeeProfile records for email; using best match.', {
-        email: normalizedEmail,
-        count: results.length,
-      });
-    }
-
-    let profile = pickBestProfileRecord(results);
-
+    const profile = await ensureEmployeeProfileForAuthUser(authUser);
     if (!profile) {
-      console.info('[AuthContext] Creating first-time EmployeeProfile.', { email: normalizedEmail });
-      const payload = {
-        email: normalizedEmail,
-        role: 'employee',
-        status: 'active',
-        has_onboarded: false,
-      };
-      try {
-        profile = await base44.entities.EmployeeProfile.create(payload);
-      } catch (error) {
-        const info = getErrorInfo(error);
-        console.error('[AuthContext] EmployeeProfile.create failed', {
-          email: normalizedEmail,
-          status: info.status,
-          message: info.message,
-        });
-        // Return a minimal in-memory profile so the app can still load
-        profile = { email: normalizedEmail, role: 'employee', has_onboarded: false, status: 'active' };
-      }
+      console.error('[AuthContext] profile missing', { email: normalizeEmail(authUser?.email) });
+      throw new Error('Employee profile is missing.');
     }
-
-    if (!profile.role || !['owner', 'super_admin', 'operator', 'employee'].includes(profile.role)) {
-      profile = { ...profile, role: 'employee' };
-    }
-
     return profile;
   };
 
   const applyAuthUser = (authUser, profile) => {
-    const mergedUser = { ...authUser, ...profile };
+    const mergedUser = {
+      ...authUser,
+      ...profile,
+      auth_email: normalizeEmail(authUser?.email),
+      email: normalizeEmail(profile?.email || authUser?.email),
+      profile_id: profile?.id,
+    };
     setUser(mergedUser);
     setIsAuthenticated(true);
     setNeedsOnboarding(mergedUser.has_onboarded !== true || !mergedUser.pin_hash);
@@ -116,7 +48,6 @@ export const AuthProvider = ({ children }) => {
   };
 
   const reloadCurrentUser = async () => {
-    console.info('[AuthContext] Reloading current user context.');
     const authUser = await base44.auth.me();
     const profile = await loadEmployeeProfile(authUser);
     const merged = applyAuthUser(authUser, profile);
@@ -184,8 +115,13 @@ export const AuthProvider = ({ children }) => {
       try {
         profile = await loadEmployeeProfile(authUser);
       } catch (entityError) {
-        console.error('[AuthContext] Failed to fetch/create EmployeeProfile:', entityError);
-        profile = { email: normalizeEmail(authUser.email), role: 'employee', has_onboarded: false };
+        console.error('[AuthContext] profile lookup failed', entityError);
+        profile = {
+          email: normalizeEmail(authUser.email),
+          role: 'employee',
+          status: 'active',
+          has_onboarded: false,
+        };
       }
 
       applyAuthUser(authUser, profile);
@@ -203,47 +139,45 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const completeOnboarding = (updatedUserFields = {}) => {
-    onboardingComplete.current = true;
+  const completeOnboarding = (updatedProfileFields = {}) => {
     setNeedsOnboarding(false);
-    setUser(prev => prev ? { ...prev, has_onboarded: true, ...updatedUserFields } : prev);
+    setUser(prev => prev ? { ...prev, has_onboarded: true, ...updatedProfileFields } : prev);
   };
 
   const saveOnboardingProfile = async ({ fullName, contactPhone, pinHash }) => {
     const authUser = await base44.auth.me();
     const normalizedEmail = normalizeEmail(authUser.email);
 
-    const profilePayload = {
-      email: normalizedEmail,
-      full_name: fullName,
-      contact_phone: contactPhone,
-      pin_hash: pinHash,
-      has_onboarded: true,
-      role: 'employee',
-      status: 'active',
-    };
+    const saved = await saveOwnEmployeeProfile({
+      authEmail: normalizedEmail,
+      fullName,
+      contactPhone,
+      pinHash,
+    });
 
-    // Find existing profile for this email
-    let existing = null;
-    try {
-      const records = await base44.entities.EmployeeProfile.filter({ email: normalizedEmail });
-      existing = records?.[0] || null;
-    } catch (err) {
-      console.warn('[AuthContext] EmployeeProfile.filter failed during onboarding:', err);
+    if (saved?.has_onboarded !== true || !saved?.pin_hash) {
+      console.error('[AuthContext] Onboarding save returned incomplete EmployeeProfile.', {
+        email: normalizedEmail,
+        targetProfileId: saved?.id || null,
+        hasOnboarded: saved?.has_onboarded,
+        hasPin: !!saved?.pin_hash,
+      });
+      throw new Error('Profile save did not persist setup fields.');
     }
 
-    if (existing?.id) {
-      // Preserve existing role if it's elevated (don't downgrade admins)
-      const preservedRole = ['owner', 'super_admin', 'operator'].includes(existing.role)
-        ? existing.role
-        : 'employee';
-      await base44.entities.EmployeeProfile.update(existing.id, { ...profilePayload, role: preservedRole });
-    } else {
-      await base44.entities.EmployeeProfile.create(profilePayload);
-    }
+    completeOnboarding(saved);
 
-    completeOnboarding({ ...profilePayload });
-    return profilePayload;
+    const reloaded = await reloadCurrentUser();
+    if (reloaded?.has_onboarded !== true || !reloaded?.pin_hash) {
+      console.error('[AuthContext] Reloaded EmployeeProfile is still incomplete after onboarding save.', {
+        email: normalizedEmail,
+        targetProfileId: reloaded?.profile_id || null,
+        hasOnboarded: reloaded?.has_onboarded,
+        hasPin: !!reloaded?.pin_hash,
+      });
+      throw new Error('Profile saved but setup could not be confirmed.');
+    }
+    return reloaded;
   };
 
   const logout = (shouldRedirect = true) => {

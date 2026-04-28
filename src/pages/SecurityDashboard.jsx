@@ -7,6 +7,7 @@ import { Lock, Shield, AlertTriangle, Clock, Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import PinModal from '@/components/clock/PinModal';
+import { getEmployeeProfileByEmail } from '@/lib/employeeProfiles';
 
 function exportCSV(rows, filename) {
   const headers = Object.keys(rows[0] || {}).join(',');
@@ -42,8 +43,8 @@ export default function SecurityDashboard() {
 
   useEffect(() => {
     if (!unlocked && user?.email) {
-      base44.entities.EmployeeProfile.filter({ email: user.email }).then(profiles => {
-        if (profiles?.[0]) setExpectedHash(profiles[0].pin_hash);
+      getEmployeeProfileByEmail(user.email, { allowLegacyFallback: true }).then(profile => {
+        if (profile?.pin_hash) setExpectedHash(profile.pin_hash);
       });
     }
   }, [unlocked, user?.email]);

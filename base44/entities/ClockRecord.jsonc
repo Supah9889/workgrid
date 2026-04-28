@@ -90,7 +90,12 @@
   "rls": {
     "create": {
       "$or": [
-        { "data.employee_email": "{{user.email}}" },
+        {
+          "$and": [
+            { "data.employee_email": "{{user.email}}" },
+            { "data.punch_out_time": null }
+          ]
+        },
         { "user_condition": { "role": "admin" } },
         { "user_condition": { "data.role": { "$in": ["owner", "super_admin", "operator"] } } }
       ]
@@ -123,7 +128,7 @@
     "delete": {
       "$or": [
         { "user_condition": { "role": "admin" } },
-        { "user_condition": { "data.role": { "$in": ["owner", "super_admin", "operator"] } } }
+        { "user_condition": { "data.role": { "$in": ["owner", "super_admin"] } } }
       ]
     }
   }

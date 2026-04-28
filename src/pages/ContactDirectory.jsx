@@ -6,6 +6,7 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/components/ui/use-toast';
 import { Pencil, Phone, Mail, Shield, Loader2, X, Check } from 'lucide-react';
+import { listEmployeeProfiles } from '@/lib/employeeProfiles';
 
 const ROLE_LABELS = { owner: 'Owner', super_admin: 'Admin', operator: 'Operator', employee: 'Employee' };
 const ROLE_COLORS = {
@@ -124,7 +125,7 @@ export default function ContactDirectory() {
 
   const { data: allUsers = [], isLoading, isError } = useQuery({
     queryKey: ['contact-directory-users'],
-    queryFn: () => base44.entities.EmployeeProfile.list(),
+    queryFn: () => listEmployeeProfiles(),
   });
 
   // Employees see only themselves; admins see all active users

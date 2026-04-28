@@ -8,6 +8,7 @@ import { Users, Plus, Search } from 'lucide-react';
 import { useToast } from '@/components/ui/use-toast';
 import EmployeeTable from '@/components/employees/EmployeeTable';
 import AddEmployeeDialog from '@/components/employees/AddEmployeeDialog';
+import { listEmployeeProfiles } from '@/lib/employeeProfiles';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,7 +30,7 @@ export default function EmployeeManagement() {
 
   const { data: users = [], isLoading, isError } = useQuery({
     queryKey: ['users'],
-    queryFn: () => base44.entities.EmployeeProfile.list(),
+    queryFn: () => listEmployeeProfiles(),
   });
 
   const changeRoleMutation = useMutation({

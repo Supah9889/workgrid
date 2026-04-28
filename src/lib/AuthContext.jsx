@@ -39,6 +39,23 @@ function getErrorInfo(error) {
   };
 }
 
+function assertOwnEmployeeCreatePayload(payload, authEmail) {
+  if (!authEmail || payload.email !== authEmail) {
+    console.error('[AuthContext] Refusing User.create due to email mismatch.', {
+      authEmail,
+      payloadEmail: payload.email,
+    });
+    throw new Error('User create email mismatch.');
+  }
+  if (payload.role !== 'employee') {
+    console.error('[AuthContext] Refusing User.create due to invalid role.', {
+      email: authEmail,
+      role: payload.role,
+    });
+    throw new Error('User create role must be employee.');
+  }
+}
+
 export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
@@ -74,6 +91,7 @@ export const AuthProvider = ({ children }) => {
         has_onboarded: false,
       };
       try {
+        assertOwnEmployeeCreatePayload(firstTimePayload, authUser.email);
         userEntity = await base44.entities.User.create(firstTimePayload);
       } catch (error) {
         const info = getErrorInfo(error);
@@ -253,6 +271,7 @@ export const AuthProvider = ({ children }) => {
         status: 'active',
       };
       try {
+        assertOwnEmployeeCreatePayload(createPayload, authUser.email);
         saved = await base44.entities.User.create(createPayload);
       } catch (error) {
         const info = getErrorInfo(error);

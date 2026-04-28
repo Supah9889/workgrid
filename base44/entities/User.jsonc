@@ -37,7 +37,6 @@
   "rls": {
     "create": {
       "$and": [
-        { "data.email": "{{user.email}}" },
         { "data.role": "employee" }
       ]
     },

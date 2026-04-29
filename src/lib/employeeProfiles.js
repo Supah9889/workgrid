@@ -2,6 +2,12 @@ import { base44 } from '@/api/base44Client';
 
 const VALID_ROLES = ['owner', 'super_admin', 'operator', 'employee'];
 const ADMIN_ROLES = ['owner', 'super_admin', 'operator'];
+const ROLE_PRIORITY = {
+  owner: 4,
+  super_admin: 3,
+  operator: 2,
+  employee: 1,
+};
 
 export function normalizeEmail(email) {
   return (email || '').trim().toLowerCase();
@@ -24,13 +30,17 @@ function sanitizeRole(role) {
 
 function sortBestProfile(records = []) {
   return [...records].sort((a, b) => {
-    const aReady = a.has_onboarded && a.pin_hash ? 1 : 0;
-    const bReady = b.has_onboarded && b.pin_hash ? 1 : 0;
-    if (aReady !== bReady) return bReady - aReady;
-
     const aActive = a.status !== 'inactive' ? 1 : 0;
     const bActive = b.status !== 'inactive' ? 1 : 0;
     if (aActive !== bActive) return bActive - aActive;
+
+    const aRolePriority = ROLE_PRIORITY[sanitizeRole(a.role)] || 0;
+    const bRolePriority = ROLE_PRIORITY[sanitizeRole(b.role)] || 0;
+    if (aRolePriority !== bRolePriority) return bRolePriority - aRolePriority;
+
+    const aReady = a.has_onboarded && a.pin_hash ? 1 : 0;
+    const bReady = b.has_onboarded && b.pin_hash ? 1 : 0;
+    if (aReady !== bReady) return bReady - aReady;
 
     return new Date(b.updated_date || b.created_date || 0) - new Date(a.updated_date || a.created_date || 0);
   })[0] || null;
@@ -77,10 +87,19 @@ export async function getEmployeeProfileByEmail(email, { allowLegacyFallback = t
   const normalizedEmail = normalizeEmail(email);
   const records = await filterEmployeeProfiles(normalizedEmail);
   if (records?.length > 1) {
+    const selected = normalizeProfile(sortBestProfile(records));
     console.warn('[EmployeeProfile] Duplicate profiles found; using best match.', {
       email: normalizedEmail,
       count: records.length,
-      ids: records.map(r => r.id),
+      selected_profile_id: selected?.id || null,
+      selected_role: selected?.role || null,
+      records: records.map(r => ({
+        id: r.id,
+        role: sanitizeRole(r.role),
+        status: r.status || 'active',
+        has_pin: !!r.pin_hash,
+        has_onboarded: r.has_onboarded === true,
+      })),
     });
   }
 
@@ -182,7 +201,7 @@ export async function saveOwnEmployeeProfile({ authEmail, fullName, contactPhone
     contact_phone: contactPhone,
     pin_hash: pinHash,
     has_onboarded: true,
-    role: 'employee',
+    role: isAdminProfile(existing) ? existing.role : 'employee',
     status: existing?.status || 'active',
   };
 

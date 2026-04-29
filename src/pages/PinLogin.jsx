@@ -53,7 +53,7 @@ function NumPad({ value, onChange, disabled }) {
 }
 
 export default function PinLogin() {
-  const { user, logout } = useAuth();
+  const { user, logout, reloadCurrentUser } = useAuth();
   const navigate = useNavigate();
   const [pin, setPin] = useState('');
   const [error, setError] = useState('');
@@ -87,7 +87,20 @@ export default function PinLogin() {
 
       if (ok) {
         sessionStorage.setItem('pin_verified', 'true');
-        const role = profile?.role || user?.role || 'employee';
+        let freshUser = null;
+        try {
+          freshUser = await reloadCurrentUser();
+        } catch (error) {
+          console.warn('[PinLogin] Profile reload after PIN verification failed:', error);
+        }
+        const role = freshUser?.role || profile?.role || user?.role || 'employee';
+        console.info('[PinLogin] PIN verified; routing by role.', {
+          email: profile.email,
+          profile_id: profile.id || null,
+          role,
+          status: profile.status || null,
+          _profileSource: profile._profileSource || null,
+        });
         const dest = (role === 'super_admin' || role === 'owner' || role === 'operator')
           ? '/dashboard' : '/my-tasks';
         navigate(dest, { replace: true });

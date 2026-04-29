@@ -17,18 +17,12 @@ function AccessDenied({ reason }) {
   );
 }
 
-/**
- * RoleGuard — gate by role AND optional permission key.
- *
- * Props:
- *   allowedRoles  — array of roles that may enter
- *   permission    — optional permission key; user must also have this permission
- *
- * Behavior:
- *   - super_admin / owner always bypass all checks (full access)
- *   - Role mismatch → redirect to the user's home page
- *   - Permission denied (role is allowed but permission missing) → inline Access Denied screen
- */
+function homeForRole(role) {
+  return role === 'owner' || role === 'super_admin' || role === 'operator'
+    ? '/dashboard'
+    : '/my-tasks';
+}
+
 export default function RoleGuard({ allowedRoles, permission, children }) {
   const { user, isLoadingAuth } = useAuth();
   const { permissionsByRole, userPermissions } = usePermissions();
@@ -45,23 +39,19 @@ export default function RoleGuard({ allowedRoles, permission, children }) {
 
   const userRole = user.role || 'employee';
 
-  // Super admins and owners bypass all permission checks
+  if (!allowedRoles.includes(userRole)) {
+    return <Navigate to={homeForRole(userRole)} replace />;
+  }
+
   const isSuperUser = userRole === 'super_admin' || userRole === 'owner';
   if (isSuperUser) return children;
 
-  // Role gate — wrong role entirely → redirect to home
-  if (!allowedRoles.includes(userRole)) {
-    if (userRole === 'operator') return <Navigate to="/dashboard" replace />;
-    return <Navigate to="/my-tasks" replace />;
-  }
-
-  // Permission gate — role is allowed but specific permission is missing → Access Denied screen
   if (permission) {
     const allowed = can(user.email, userRole, permission, userPermissions, permissionsByRole);
     if (!allowed) {
       return (
         <AccessDenied
-          reason={`Your account does not have the required permission to access this page. Ask a Super Admin to update your permissions.`}
+          reason="Your account does not have the required permission to access this page. Ask a Super Admin to update your permissions."
         />
       );
     }

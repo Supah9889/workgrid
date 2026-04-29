@@ -41,6 +41,13 @@ export const AuthProvider = ({ children }) => {
       email: normalizeEmail(profile?.email || authUser?.email),
       profile_id: profile?.id,
     };
+    console.info('[AuthContext] Loaded employee profile.', {
+      email: mergedUser.email,
+      profile_id: mergedUser.profile_id || null,
+      role: mergedUser.role || null,
+      status: mergedUser.status || null,
+      _profileSource: mergedUser._profileSource || null,
+    });
     setUser(mergedUser);
     setIsAuthenticated(true);
     setNeedsOnboarding(mergedUser.has_onboarded !== true || !mergedUser.pin_hash);
@@ -181,8 +188,15 @@ export const AuthProvider = ({ children }) => {
   };
 
   const logout = (shouldRedirect = true) => {
-    sessionStorage.removeItem('pin_verified');
-    sessionStorage.removeItem('onboarding_complete');
+    [
+      'pin_verified',
+      'onboarding_complete',
+      'workgrid_role',
+      'workgrid_route',
+      'last_route',
+      'redirect_path',
+      'user_role',
+    ].forEach(key => sessionStorage.removeItem(key));
     setUser(null);
     setIsAuthenticated(false);
     setNeedsOnboarding(false);

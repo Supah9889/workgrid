@@ -108,9 +108,11 @@ export default function EmployeeManagement() {
     return (
       (u.full_name || '').toLowerCase().includes(term) ||
       (u.email || '').toLowerCase().includes(term) ||
-      (u.role || '').toLowerCase().includes(term)
+      (u.role || '').toLowerCase().includes(term) ||
+      (u.deletion_requested && 'deletion requested'.includes(term))
     );
   });
+  const deletionRequestCount = users.filter(u => u.deletion_requested).length;
 
   if (isError) return (
     <div className="flex flex-col items-center justify-center h-64 gap-3">
@@ -129,6 +131,11 @@ export default function EmployeeManagement() {
           <div>
             <h1 className="text-3xl font-bold tracking-tight">Employees</h1>
             <p className="text-muted-foreground">Manage your workforce</p>
+            {deletionRequestCount > 0 && (
+              <p className="text-sm text-amber-700 mt-1">
+                {deletionRequestCount} account deletion request{deletionRequestCount === 1 ? '' : 's'} needs review.
+              </p>
+            )}
           </div>
         </div>
         <Button onClick={() => setShowAddDialog(true)} className="gap-2">

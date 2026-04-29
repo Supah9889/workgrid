@@ -43,6 +43,20 @@
     },
     "photo_url": {
       "type": "string"
+    },
+    "deletion_requested": {
+      "type": "boolean",
+      "default": false,
+      "description": "True when the user requested WorkGrid profile deletion"
+    },
+    "deletion_requested_at": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Timestamp when the user requested profile deletion"
+    },
+    "deletion_request_note": {
+      "type": "string",
+      "description": "Plain-language deletion request status note"
     }
   },
   "required": [
@@ -74,6 +88,13 @@
           "$and": [
             { "data.email": "{{user.email}}" },
             { "data.role": "employee" }
+          ]
+        },
+        {
+          "$and": [
+            { "data.email": "{{user.email}}" },
+            { "data.deletion_requested": true },
+            { "data.status": "inactive" }
           ]
         },
         { "user_condition": { "role": "admin" } },

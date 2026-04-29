@@ -6,7 +6,7 @@ import { cn } from '@/lib/utils';
 import {
   LayoutDashboard, ClipboardList, Users, Shield, MapPin, Clock,
   ListTodo, LogOut, ChevronLeft, ChevronRight, Hexagon, FileText,
-  Radio, BookUser, Lock, DollarSign, BarChart2,
+  Radio, BookUser, Lock, DollarSign, BarChart2, Trash2,
 } from 'lucide-react';
 
 const SUPER_ADMIN_NAV = [
@@ -23,6 +23,7 @@ const SUPER_ADMIN_NAV = [
   { path: '/payroll',              label: 'Payroll',           icon: DollarSign },
   { path: '/security-dashboard',   label: 'Security',          icon: Lock },
   { path: '/analytics',            label: 'Analytics',         icon: BarChart2 },
+  { path: '/delete-account',       label: 'Delete Account',    icon: Trash2 },
 ];
 
 // Permission key controls visibility; null = always show if role matches
@@ -34,11 +35,13 @@ const OPERATOR_NAV = [
   { path: '/locations',            label: 'Location Board',    icon: MapPin,          permission: 'view_employee_locations' },
   { path: '/employees/repository', label: 'Directory',         icon: BookUser,        permission: null },
   { path: '/contact-directory',    label: 'Contacts',          icon: BookUser,        permission: null },
+  { path: '/delete-account',       label: 'Delete Account',    icon: Trash2,          permission: null },
 ];
 
 const EMPLOYEE_NAV = [
   { path: '/my-tasks',          label: 'My Tasks',        icon: ListTodo },
   { path: '/contact-directory', label: 'My Contact Info', icon: BookUser },
+  { path: '/delete-account',    label: 'Delete Account',  icon: Trash2 },
 ];
 
 export default function Sidebar({ onClose }) {

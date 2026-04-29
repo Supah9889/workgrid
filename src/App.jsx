@@ -28,6 +28,7 @@ import ContactDirectory from '@/pages/ContactDirectory';
 import SecurityDashboard from '@/pages/SecurityDashboard';
 import PayrollSummary from '@/pages/PayrollSummary';
 import Analytics from '@/pages/Analytics';
+import DeleteAccount from '@/pages/DeleteAccount';
 
 const AuthenticatedApp = () => {
   const { isLoadingAuth, isLoadingPublicSettings, authError, navigateToLogin, needsOnboarding, user } = useAuth();
@@ -141,6 +142,11 @@ const AuthenticatedApp = () => {
           <Route path="/security-dashboard" element={
             <RoleGuard allowedRoles={['super_admin', 'owner']}>
               <SecurityDashboard />
+            </RoleGuard>
+          } />
+          <Route path="/delete-account" element={
+            <RoleGuard allowedRoles={['super_admin', 'owner', 'operator', 'employee']}>
+              <DeleteAccount />
             </RoleGuard>
           } />
         </Route>

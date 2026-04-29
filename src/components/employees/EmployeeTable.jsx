@@ -77,9 +77,16 @@ export default function EmployeeTable({ users, onChangeRole, onDeactivate, onAct
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Badge variant={isInactive ? 'outline' : 'secondary'} className={isInactive ? 'text-destructive border-destructive/30' : 'bg-green-50 text-green-700 border-0'}>
-                      {isInactive ? 'Inactive' : 'Active'}
-                    </Badge>
+                    <div className="flex flex-col items-start gap-1">
+                      <Badge variant={isInactive ? 'outline' : 'secondary'} className={isInactive ? 'text-destructive border-destructive/30' : 'bg-green-50 text-green-700 border-0'}>
+                        {isInactive ? 'Inactive' : 'Active'}
+                      </Badge>
+                      {u.deletion_requested && (
+                        <Badge variant="outline" className="border-amber-300 bg-amber-50 text-amber-700">
+                          Deletion requested
+                        </Badge>
+                      )}
+                    </div>
                   </TableCell>
                   <TableCell className="text-sm text-muted-foreground">
                     {u.created_date ? format(new Date(u.created_date), 'MMM d, yyyy') : '—'}

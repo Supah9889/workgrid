@@ -120,7 +120,7 @@ export default function ClockButton({ user }) {
     } catch (err) {
       toast({
         title: 'Could not verify setup',
-        description: err.message || 'Check your connection and try again.',
+        description: err.message || 'Something went wrong - please try again.',
         variant: 'destructive',
       });
     }
@@ -259,7 +259,7 @@ export default function ClockButton({ user }) {
         `${fresh.full_name || fresh.email} punched in${!geo.in_bounds ? ' outside geofence' : ''}`,
         fresh.email, fresh.full_name, { entity_id: record.id, entity_type: 'ClockRecord' }
       );
-      toast({ title: geo.in_bounds ? 'Punched in' : 'Punched in outside geofence area' });
+      toast({ title: 'Clocked in successfully', description: geo.in_bounds ? undefined : 'You are outside the geofence area.' });
     } catch(e) {
       console.error('ClockRecord.create failed:', e);
       throw e;
@@ -309,7 +309,7 @@ export default function ClockButton({ user }) {
         total_lunch_minutes: lunchMins,
       });
       setClockRecord(r => ({ ...r, ...updated }));
-      toast({ title: `Back from lunch - ${lunchMins} min` });
+      toast({ title: 'Lunch ended', description: `${lunchMins} min recorded` });
     } catch (error) {
       console.error('ClockRecord.update failed:', error);
       throw error;
@@ -362,7 +362,7 @@ export default function ClockButton({ user }) {
       `${fresh.full_name || fresh.email} punched out (${totalHours}h)${!geo.in_bounds ? ' outside geofence' : ''}`,
       fresh.email, fresh.full_name
     );
-    toast({ title: `Punched out - ${totalHours}h worked` });
+    toast({ title: 'Clocked out successfully', description: `${totalHours}h worked` });
   };
 
   const handlePinSuccess = async () => {
@@ -388,17 +388,17 @@ export default function ClockButton({ user }) {
       if (e?.status === 401 || e?.status === 403 || message.includes('unauthorized') || message.includes('forbidden')) {
         console.error('[ClockButton] RLS/permission blocked', { action, message: e?.message });
         description = action === 'punch_in'
-          ? 'Your account does not have permission to create a clock record. Contact your administrator.'
-          : 'Your account does not have permission to update this clock record. Contact your administrator.';
+          ? "You don't have permission to do that."
+          : "You don't have permission to do that.";
       } else if (message.includes('network') || message.includes('fetch')) {
-        description = 'Network error - check your connection and try again.';
+        description = 'Something went wrong - please try again.';
       } else if (message.includes('permission') || message.includes('denied')) {
         console.error('[ClockButton] RLS/permission blocked', { action, message: e?.message });
         description = action === 'punch_in'
-          ? 'Clock-in was denied. Contact your administrator if this continues.'
-          : 'This clock update was denied. Contact your administrator if this continues.';
+          ? "You don't have permission to do that."
+          : "You don't have permission to do that.";
       } else if (message.includes('validation') || message.includes('required')) {
-        description = 'Missing required data. Contact your administrator.';
+        description = 'Something went wrong - please try again.';
       } else if (e?.message) {
         description = e.message;
       }
@@ -414,9 +414,9 @@ export default function ClockButton({ user }) {
   const hasHadLunch = isClockedIn && !!clockRecord.lunch_start && !!clockRecord.lunch_end;
 
   const STATUS_STYLES = {
-    out:   { border: 'border-slate-700',          bg: 'bg-slate-800/60',      dot: 'bg-slate-500',   label: 'text-slate-400',  text: 'Not Clocked In' },
-    in:    { border: 'border-emerald-500/40',     bg: 'bg-emerald-500/10',    dot: 'bg-emerald-400', label: 'text-emerald-400', text: 'On the Clock' },
-    lunch: { border: 'border-yellow-500/40',      bg: 'bg-yellow-500/10',     dot: 'bg-yellow-400',  label: 'text-yellow-400',  text: 'On Lunch' },
+    out:   { border: 'border-slate-700',          bg: 'bg-slate-800/60',      dot: 'bg-slate-500',   label: 'text-slate-400',  text: 'You are currently clocked out' },
+    in:    { border: 'border-emerald-500/40',     bg: 'bg-emerald-500/10',    dot: 'bg-emerald-400', label: 'text-emerald-400', text: 'You are clocked in' },
+    lunch: { border: 'border-yellow-500/40',      bg: 'bg-yellow-500/10',     dot: 'bg-yellow-400',  label: 'text-yellow-400',  text: 'You are on lunch' },
   };
   const st = isOnLunch ? STATUS_STYLES.lunch : isClockedIn ? STATUS_STYLES.in : STATUS_STYLES.out;
 
@@ -483,7 +483,7 @@ export default function ClockButton({ user }) {
                     }`}
                   >
                     <Coffee className="w-3.5 h-3.5" />
-                    {isOnLunch ? 'End Lunch' : 'Lunch'}
+                    {isOnLunch ? 'End Lunch' : 'Start Lunch'}
                   </button>
                 )}
                 <button

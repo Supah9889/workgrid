@@ -52,8 +52,8 @@ export default function ClockRecords() {
 
   if (isError) return (
     <div className="flex flex-col items-center justify-center h-64 gap-3">
-      <p className="text-destructive font-medium">Could not load clock records</p>
-      <p className="text-muted-foreground text-sm">Check your connection and try refreshing the page.</p>
+      <p className="text-destructive font-medium">Something went wrong - please try again</p>
+      <p className="text-muted-foreground text-sm">We could not load clock records right now.</p>
       <button onClick={() => refetch()} className="text-sm text-primary underline">Retry</button>
     </div>
   );

@@ -79,7 +79,7 @@ export default function PinLogin() {
       const profile = await getEmployeeProfileByEmail(user?.email, { allowLegacyFallback: true });
       if (!profile?.pin_hash) {
         console.error('[PinLogin] PIN missing', { email: user?.email });
-        setError('PIN setup is missing. Please contact your manager.');
+        setError('Forgot your PIN? Ask an admin to reset it.');
         setChecking(false);
         return;
       }
@@ -109,7 +109,7 @@ export default function PinLogin() {
         console.error('[PinLogin] PIN mismatch', { email: user?.email });
         const next = attempts + 1;
         setAttempts(next);
-        if (next < MAX_ATTEMPTS) setError('Incorrect PIN');
+        if (next < MAX_ATTEMPTS) setError('Incorrect PIN - try again');
         setTimeout(() => {
           setPin('');
           setError('');
@@ -135,7 +135,8 @@ export default function PinLogin() {
       <h1 className="text-2xl font-bold text-white mb-1">
         Welcome back, {user?.full_name?.split(' ')[0] || 'there'}
       </h1>
-      <p className="text-slate-400 text-sm mb-2">Enter your PIN to continue</p>
+      <p className="text-slate-400 text-sm mb-1">Enter your 4-digit PIN to continue</p>
+      <p className="text-slate-500 text-xs mb-2">Forgot your PIN? Ask an admin to reset it.</p>
 
       <PinDots value={pin} error={!!error} />
 

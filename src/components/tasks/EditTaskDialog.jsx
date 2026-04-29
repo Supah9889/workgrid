@@ -245,7 +245,7 @@ export default function EditTaskDialog({ open, onOpenChange, task, employees = [
             <Button type="button" variant="outline" onClick={() => onOpenChange(false)} className="h-11 w-full sm:w-auto">Cancel</Button>
             <Button type="button" onClick={handleSubmit} disabled={!canSubmit} className="h-11 w-full sm:w-auto">
               {saving && <Loader2 className="w-4 h-4 mr-1 animate-spin" />}
-              Save Changes
+              Update Task
             </Button>
           </DialogFooter>
         </div>

@@ -118,8 +118,10 @@ export default function LiveStatusList({ employees, clockedInRecords, onManualCl
             </div>
           );
         })}
-        {employees.filter(u => u.role !== 'super_admin').length === 0 && (
+        {employees.filter(u => u.role !== 'super_admin').length === 0 ? (
           <div className="py-10 text-center text-sm text-muted-foreground">No employees found</div>
+        ) : clockedInRecords.length === 0 && (
+          <div className="py-10 text-center text-sm text-muted-foreground">No one is clocked in yet</div>
         )}
       </div>
     </div>

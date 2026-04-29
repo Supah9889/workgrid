@@ -75,6 +75,7 @@ export default function Onboarding() {
   const pinMismatch = confirmPin.length === 4 && pin !== confirmPin;
 
   const handleFinish = async () => {
+    if (pin.length !== 4 || confirmPin.length !== 4) { setError('Please create a 4-digit PIN'); return; }
     if (!pinsMatch) { setError('PINs do not match'); return; }
     setSaving(true);
     try {
@@ -105,8 +106,8 @@ export default function Onboarding() {
       const msg = status === 401 || status === 403 || lowerMessage.includes('forbidden') || lowerMessage.includes('unauthorized') || lowerMessage.includes('permission')
         ? 'Profile save was blocked. Please contact admin.'
         : lowerMessage.includes('network') || lowerMessage.includes('fetch')
-        ? 'Network error — check your connection and try again.'
-        : e?.message || 'Could not save your profile. Please try again.';
+        ? 'Network error - check your connection and try again.'
+        : 'Something went wrong - please try again.';
       setError(msg);
     }
     setSaving(false);
@@ -122,7 +123,10 @@ export default function Onboarding() {
             <Hexagon className="w-10 h-10 text-white" />
           </div>
           <h1 className="text-4xl font-bold text-white mb-2">Welcome to WorkGrid</h1>
-          <p className="text-slate-400 text-lg mb-10">Omi's Parts & Delivery</p>
+          <p className="text-slate-400 text-lg mb-3">Omi's Parts & Delivery</p>
+          <p className="text-slate-300 text-sm max-w-xs mb-10">
+            Set up your profile so you can clock in and receive tasks.
+          </p>
           <button onClick={goNext}
             className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-10 py-4 rounded-2xl text-lg transition-all active:scale-95">
             Get Started
@@ -134,16 +138,18 @@ export default function Onboarding() {
       {step === 2 && (
         <div className="w-full max-w-sm">
           <h2 className="text-2xl font-bold text-white mb-1">Tell us about yourself</h2>
-          <p className="text-slate-400 text-sm mb-8">This is how your team will identify you</p>
+          <p className="text-slate-400 text-sm mb-8">Set up your profile so you can clock in and receive tasks.</p>
           <div className="space-y-4 mb-8">
             <div>
               <label className="text-slate-400 text-xs uppercase tracking-wide mb-1.5 block">Full Name *</label>
+              <p className="text-slate-500 text-xs mb-1.5">Your full name</p>
               <input value={fullName} onChange={e => setFullName(e.target.value)}
                 placeholder="e.g. Maria Rodriguez"
                 className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 transition-colors" />
             </div>
             <div>
               <label className="text-slate-400 text-xs uppercase tracking-wide mb-1.5 block">Phone Number</label>
+              <p className="text-slate-500 text-xs mb-1.5">Best number to reach you</p>
               <input value={phone} onChange={e => setPhone(e.target.value)}
                 placeholder="e.g. (843) 555-0123"
                 className="w-full bg-slate-800 border border-slate-700 text-white rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-blue-500 transition-colors" />
@@ -175,7 +181,7 @@ export default function Onboarding() {
           </h2>
           <p className="text-slate-400 text-sm mb-2 text-center">
             {pinStage === 'set'
-              ? 'Required for clock punches and secure areas'
+              ? "4-digit code you'll use to clock in"
               : 'Enter your PIN again to confirm'}
           </p>
           <PinDots value={pinValue} />
@@ -194,7 +200,7 @@ export default function Onboarding() {
               className="flex items-center gap-1 text-slate-400 hover:text-white transition-colors px-4 py-3">
               <ChevronLeft className="w-4 h-4" /> Back
             </button>
-            <button onClick={handleFinish} disabled={!pinsMatch || saving}
+            <button onClick={handleFinish} disabled={saving}
               className="flex-1 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed text-white font-semibold py-3 rounded-xl transition-all active:scale-95 flex items-center justify-center gap-2">
               {saving && <Loader2 className="w-4 h-4 animate-spin" />}
               {saving ? 'Saving...' : 'Finish Setup'}

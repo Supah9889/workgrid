@@ -150,8 +150,8 @@ export default function TaskBoard() {
       <div className="space-y-2" style={{ display: view === 'map' ? 'none' : undefined }}>
         {isError ? (
           <div className="flex flex-col items-center justify-center h-64 gap-3">
-            <p className="text-destructive font-medium">Failed to load data</p>
-            <p className="text-muted-foreground text-sm">Check your connection and refresh the page</p>
+            <p className="text-destructive font-medium">Something went wrong - please try again</p>
+            <p className="text-muted-foreground text-sm">We could not load tasks right now.</p>
           </div>
         ) : isLoading ? (
           <div className="flex items-center justify-center h-64">
@@ -159,8 +159,12 @@ export default function TaskBoard() {
           </div>
         ) : filtered.length === 0 ? (
           <div className="text-center py-16 text-muted-foreground">
-            <p className="text-lg font-medium">No active tasks</p>
-            <p className="text-sm mt-1">Click "Create Task" to get started</p>
+            <p className="text-lg font-medium">
+              {showCompleted ? 'No completed tasks yet' : 'No active tasks yet - create one to get started'}
+            </p>
+            <p className="text-sm mt-1">
+              {showCompleted ? 'Completed tasks will appear here.' : 'Use Create Task when work is ready to assign.'}
+            </p>
           </div>
         ) : (
           filtered.map(task => (

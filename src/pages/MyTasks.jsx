@@ -318,8 +318,8 @@ export default function MyTasks() {
         </button>
         {isError ? (
           <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
-            <p className="text-red-400 font-medium">Failed to load tasks</p>
-            <p className="text-slate-500 text-sm">Check your connection and refresh the page</p>
+            <p className="text-red-400 font-medium">Something went wrong - please try again</p>
+            <p className="text-slate-500 text-sm">We could not load your tasks right now.</p>
           </div>
         ) : isLoading ? (
           <div className="flex justify-center py-24">
@@ -331,7 +331,7 @@ export default function MyTasks() {
               <ListTodo className="w-7 h-7 text-slate-500" />
             </div>
             <p className="text-slate-300 font-semibold text-lg">
-              {showCompleted ? 'No completed deliveries' : 'No active deliveries'}
+              {showCompleted ? 'No completed tasks yet' : "You don't have any tasks right now"}
             </p>
             <p className="text-slate-500 text-sm mt-1">
               {showCompleted ? 'Completed work will appear here.' : 'Your current work will appear here.'}

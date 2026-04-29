@@ -21,7 +21,7 @@ export default function DailyLog({ records }) {
   if (records.length === 0) {
     return (
       <div className="text-center py-10 text-sm text-muted-foreground rounded-xl border border-border">
-        No clock records for this date.
+        No activity yet - start by clocking in or creating a task.
       </div>
     );
   }

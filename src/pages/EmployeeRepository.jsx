@@ -5,11 +5,22 @@ import { useAuth } from '@/lib/AuthContext';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Input } from '@/components/ui/input';
-import { Search, Plus, Mail, Phone, UserCircle } from 'lucide-react';
+import { Search, Plus, Mail, Phone, UserCircle, KeyRound } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import AddEmployeeDialog from '@/components/employees/AddEmployeeDialog';
 import { isOpenClockRecord } from '@/lib/clockRecords';
-import { listEmployeeProfiles } from '@/lib/employeeProfiles';
+import { canResetEmployeePin, listEmployeeProfiles, resetEmployeePin } from '@/lib/employeeProfiles';
+import { useToast } from '@/components/ui/use-toast';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const ROLE_STYLES = {
   super_admin: 'bg-purple-100 text-purple-700 border-purple-200',
@@ -24,7 +35,7 @@ function StatusDot({ clockedIn }) {
   );
 }
 
-function EmployeeCard({ emp, isClockedIn, onViewProfile }) {
+function EmployeeCard({ emp, isClockedIn, onViewProfile, onResetPin, canResetPin }) {
   const initials = (emp.full_name || emp.email || '?')
     .split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
 
@@ -70,6 +81,16 @@ function EmployeeCard({ emp, isClockedIn, onViewProfile }) {
         <Button size="sm" variant="outline" className="w-full text-xs h-10 gap-1" onClick={() => onViewProfile(emp)}>
           <UserCircle className="w-3.5 h-3.5" /> View Profile
         </Button>
+        {canResetPin && (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="w-full text-xs h-10 gap-1 mt-1 text-muted-foreground"
+            onClick={() => onResetPin(emp)}
+          >
+            <KeyRound className="w-3.5 h-3.5" /> Reset PIN
+          </Button>
+        )}
       </div>
     </div>
   );
@@ -77,11 +98,14 @@ function EmployeeCard({ emp, isClockedIn, onViewProfile }) {
 
 export default function EmployeeRepository() {
   const { user } = useAuth();
+  const { toast } = useToast();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const [search, setSearch] = useState('');
   const [filter, setFilter] = useState('all');
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [pendingPinReset, setPendingPinReset] = useState(null);
+  const [resettingPin, setResettingPin] = useState(false);
 
   const { data: users = [], isLoading, isError } = useQuery({
     queryKey: ['users'],
@@ -118,6 +142,30 @@ export default function EmployeeRepository() {
     { key: 'admins', label: 'Admins' },
     { key: 'employees', label: 'Employees' },
   ];
+  const canResetPin = canResetEmployeePin(user);
+
+  const handleResetPin = async () => {
+    if (!pendingPinReset) return;
+    setResettingPin(true);
+    try {
+      await resetEmployeePin({ adminProfile: user, employeeProfile: pendingPinReset });
+      queryClient.invalidateQueries({ queryKey: ['users'] });
+      toast({
+        title: 'PIN reset',
+        description: `${pendingPinReset.full_name || pendingPinReset.email} will be asked to create a new PIN at next login.`,
+      });
+      setPendingPinReset(null);
+    } catch (err) {
+      console.error('[EmployeeRepository] PIN reset failed:', err);
+      toast({
+        title: 'Failed to reset PIN',
+        description: err.message || 'Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setResettingPin(false);
+    }
+  };
 
   if (isLoading) return (
     <div className="flex items-center justify-center h-64">
@@ -182,6 +230,8 @@ export default function EmployeeRepository() {
             emp={emp}
             isClockedIn={clockedInEmails.has(emp.email)}
             onViewProfile={() => navigate(`/employees/${emp.id}`)}
+            canResetPin={canResetPin}
+            onResetPin={setPendingPinReset}
           />
         ))}
         {filtered.length === 0 && (
@@ -196,6 +246,25 @@ export default function EmployeeRepository() {
         onOpenChange={setShowAddDialog}
         onSuccess={() => queryClient.invalidateQueries({ queryKey: ['users'] })}
       />
+
+      <AlertDialog open={!!pendingPinReset} onOpenChange={(open) => !open && setPendingPinReset(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Reset PIN for {pendingPinReset?.full_name || pendingPinReset?.email}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This clears the saved PIN hash and forces the employee to create a new PIN at next login. You will not see their old or new PIN.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={resettingPin}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleResetPin} disabled={resettingPin}>
+              {resettingPin ? 'Resetting...' : 'Reset PIN'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

@@ -40,7 +40,14 @@ export default function RoleGuard({ allowedRoles, permission, children }) {
   const userRole = user.role || 'employee';
 
   if (!allowedRoles.includes(userRole)) {
-    return <Navigate to={homeForRole(userRole)} replace />;
+    const destination = homeForRole(userRole);
+    console.info('[RoleGuard] Redirecting role mismatch.', {
+      email: user.email,
+      role: userRole,
+      allowedRoles,
+      destination,
+    });
+    return <Navigate to={destination} replace />;
   }
 
   const isSuperUser = userRole === 'super_admin' || userRole === 'owner';

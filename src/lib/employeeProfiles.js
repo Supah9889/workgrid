@@ -2,6 +2,7 @@ import { base44 } from '@/api/base44Client';
 
 const VALID_ROLES = ['owner', 'super_admin', 'operator', 'employee'];
 const ADMIN_ROLES = ['owner', 'super_admin', 'operator'];
+const PIN_RESET_ROLES = ['owner', 'super_admin'];
 const ROLE_PRIORITY = {
   owner: 4,
   super_admin: 3,
@@ -15,6 +16,10 @@ export function normalizeEmail(email) {
 
 export function isAdminProfile(profile) {
   return ADMIN_ROLES.includes(profile?.role);
+}
+
+export function canResetEmployeePin(profile) {
+  return PIN_RESET_ROLES.includes(profile?.role);
 }
 
 function getErrorInfo(error) {
@@ -44,6 +49,36 @@ function sortBestProfile(records = []) {
 
     return new Date(b.updated_date || b.created_date || 0) - new Date(a.updated_date || a.created_date || 0);
   })[0] || null;
+}
+
+function dedupeProfilesByEmail(records = []) {
+  const byEmail = records.reduce((map, record) => {
+    const email = normalizeEmail(record.email);
+    if (!email) return map;
+    if (!map[email]) map[email] = [];
+    map[email].push(record);
+    return map;
+  }, {});
+
+  return Object.entries(byEmail).map(([email, emailRecords]) => {
+    if (emailRecords.length > 1) {
+      const selected = normalizeProfile(sortBestProfile(emailRecords));
+      console.warn('[EmployeeProfile] Duplicate profiles in list; using best match.', {
+        email,
+        count: emailRecords.length,
+        selected_profile_id: selected?.id || null,
+        selected_role: selected?.role || null,
+        records: emailRecords.map(r => ({
+          id: r.id,
+          role: sanitizeRole(r.role),
+          status: r.status || 'active',
+          has_pin: !!r.pin_hash,
+          has_onboarded: r.has_onboarded === true,
+        })),
+      });
+    }
+    return normalizeProfile(sortBestProfile(emailRecords));
+  }).filter(Boolean);
 }
 
 function normalizeProfile(profile, source = 'EmployeeProfile') {
@@ -127,7 +162,7 @@ export async function listEmployeeProfiles({ allowLegacyFallback = true } = {}) 
   try {
     const profiles = await base44.entities.EmployeeProfile.list();
     if (profiles.length > 0 || !allowLegacyFallback) {
-      return profiles.map(p => normalizeProfile(p)).filter(Boolean);
+      return dedupeProfilesByEmail(profiles);
     }
   } catch (error) {
     const info = getErrorInfo(error);
@@ -220,4 +255,43 @@ export async function saveOwnEmployeeProfile({ authEmail, fullName, contactPhone
     });
     throw error;
   }
+}
+
+export async function resetEmployeePin({ adminProfile, employeeProfile }) {
+  if (!canResetEmployeePin(adminProfile)) {
+    throw new Error('Only owners and super admins can reset employee PINs.');
+  }
+  if (!employeeProfile?.id || !employeeProfile?.email) {
+    throw new Error('Employee profile is required.');
+  }
+
+  const adminEmail = normalizeEmail(adminProfile.email);
+  const employeeEmail = normalizeEmail(employeeProfile.email);
+  const timestamp = new Date().toISOString();
+
+  const updated = await base44.entities.EmployeeProfile.update(employeeProfile.id, {
+    pin_hash: '',
+    has_onboarded: false,
+  });
+
+  try {
+    await base44.entities.ActivityFeed.create({
+      event_type: 'pin_reset',
+      description: `${adminProfile.full_name || adminEmail} reset PIN setup for ${employeeProfile.full_name || employeeEmail}`,
+      actor_email: adminEmail,
+      actor_name: adminProfile.full_name || adminEmail,
+      entity_id: employeeProfile.id,
+      entity_type: 'EmployeeProfile',
+      metadata: {
+        action: 'pin_reset',
+        admin_email: adminEmail,
+        employee_email: employeeEmail,
+        timestamp,
+      },
+    });
+  } catch (error) {
+    console.warn('[EmployeeProfile] PIN reset audit log failed.', error);
+  }
+
+  return normalizeProfile(updated);
 }

@@ -92,6 +92,7 @@ export default function Onboarding() {
         pinHash,
       });
       sessionStorage.setItem('pin_verified', 'true');
+      sessionStorage.setItem('pin_verified_email', user?.email || '');
       setStep(4);
       setTimeout(() => {
         setVisible(false);

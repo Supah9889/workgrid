@@ -87,6 +87,7 @@ export default function PinLogin() {
 
       if (ok) {
         sessionStorage.setItem('pin_verified', 'true');
+        sessionStorage.setItem('pin_verified_email', profile.email);
         let freshUser = null;
         try {
           freshUser = await reloadCurrentUser();

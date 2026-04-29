@@ -7,9 +7,15 @@ export default function RoleRouter() {
   if (!user) return null;
 
   const role = user.role || 'employee';
+  const destination = (role === 'owner' || role === 'super_admin' || role === 'operator')
+    ? '/dashboard'
+    : '/my-tasks';
 
-  if (role === 'owner') return <Navigate to="/dashboard" replace />;
-  if (role === 'super_admin') return <Navigate to="/dashboard" replace />;
-  if (role === 'operator') return <Navigate to="/dashboard" replace />;
-  return <Navigate to="/my-tasks" replace />;
+  console.info('[RoleRouter] Routing user by role.', {
+    email: user.email,
+    role,
+    destination,
+  });
+
+  return <Navigate to={destination} replace />;
 }

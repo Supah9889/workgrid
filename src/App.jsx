@@ -55,7 +55,9 @@ const AuthenticatedApp = () => {
   }
 
   const pinVerified = sessionStorage.getItem('pin_verified') === 'true';
-  if (!needsOnboarding && !pinVerified && user?.pin_hash && location.pathname !== '/pin-login') {
+  const pinVerifiedEmail = sessionStorage.getItem('pin_verified_email');
+  const pinVerifiedForUser = pinVerified && pinVerifiedEmail === user?.email;
+  if (!needsOnboarding && !pinVerifiedForUser && user?.pin_hash && location.pathname !== '/pin-login') {
     return <Navigate to="/pin-login" replace />;
   }
 

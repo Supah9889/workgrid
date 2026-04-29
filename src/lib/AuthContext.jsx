@@ -190,6 +190,7 @@ export const AuthProvider = ({ children }) => {
   const logout = (shouldRedirect = true) => {
     [
       'pin_verified',
+      'pin_verified_email',
       'onboarding_complete',
       'workgrid_role',
       'workgrid_route',

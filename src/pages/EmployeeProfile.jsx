@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
 import { useQuery } from '@tanstack/react-query';
 import { format, subDays } from 'date-fns';
-import { ArrowLeft, MapPin, Clock, ClipboardList, Activity, Edit2, Check, X } from 'lucide-react';
+import { ArrowLeft, MapPin, Clock, ClipboardList, Activity, Edit2, Check, X, KeyRound } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -11,7 +11,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { StatusBadge, PriorityBadge } from '@/components/tasks/TaskBadges';
 import { useToast } from '@/components/ui/use-toast';
 import { getPunchInTime, getPunchOutTime, isOpenClockRecord } from '@/lib/clockRecords';
-import { listEmployeeProfiles } from '@/lib/employeeProfiles';
+import { canResetEmployeePin, listEmployeeProfiles, resetEmployeePin } from '@/lib/employeeProfiles';
+import { useAuth } from '@/lib/AuthContext';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 
 const STATUS_STYLES = {
   active: 'bg-emerald-100 text-emerald-700 border-emerald-200',
@@ -21,10 +32,13 @@ const STATUS_STYLES = {
 export default function EmployeeProfile() {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
   const { id: employeeId } = useParams();
 
   const [editMode, setEditMode] = useState(false);
   const [editRole, setEditRole] = useState('');
+  const [resetPinOpen, setResetPinOpen] = useState(false);
+  const [resettingPin, setResettingPin] = useState(false);
 
   const { data: employee, refetch: refetchEmp, isLoading: empLoading, isError: empError } = useQuery({
     queryKey: ['emp-profile', employeeId],
@@ -50,7 +64,13 @@ export default function EmployeeProfile() {
 
   const { data: activityEvents = [] } = useQuery({
     queryKey: ['emp-activity', employeeId],
-    queryFn: () => base44.entities.ActivityFeed.filter({ actor_email: employee?.email }),
+    queryFn: async () => {
+      const events = await base44.entities.ActivityFeed.list('-created_date', 200);
+      return events.filter(event =>
+        event.actor_email === employee?.email ||
+        event.metadata?.employee_email === employee?.email
+      );
+    },
     enabled: !!employee?.email,
   });
 
@@ -75,6 +95,28 @@ export default function EmployeeProfile() {
     await base44.entities.EmployeeProfile.update(employeeId, { status: newStatus });
     toast({ title: `Employee ${newStatus === 'active' ? 'reactivated' : 'deactivated'}` });
     refetchEmp();
+  };
+
+  const handleResetPin = async () => {
+    setResettingPin(true);
+    try {
+      await resetEmployeePin({ adminProfile: user, employeeProfile: employee });
+      toast({
+        title: 'PIN reset',
+        description: `${employee.full_name || employee.email} will be asked to create a new PIN at next login.`,
+      });
+      setResetPinOpen(false);
+      refetchEmp();
+    } catch (err) {
+      console.error('[EmployeeProfile] PIN reset failed:', err);
+      toast({
+        title: 'Failed to reset PIN',
+        description: err.message || 'Please try again.',
+        variant: 'destructive',
+      });
+    } finally {
+      setResettingPin(false);
+    }
   };
 
   if (empError) return (
@@ -105,6 +147,7 @@ export default function EmployeeProfile() {
     if (!clockByDay[r.date]) clockByDay[r.date] = [];
     clockByDay[r.date].push(r);
   });
+  const canResetPin = canResetEmployeePin(user);
 
   return (
     <div className="p-6 max-w-5xl mx-auto space-y-5">
@@ -150,6 +193,11 @@ export default function EmployeeProfile() {
               </div>
             </div>
             <div className="flex items-center gap-2">
+              {canResetPin && (
+                <Button size="sm" variant="outline" className="gap-1.5" onClick={() => setResetPinOpen(true)}>
+                  <KeyRound className="w-3.5 h-3.5" /> Reset PIN
+                </Button>
+              )}
               {!editMode && (
                 <Button size="sm" variant="outline" className="gap-1.5" onClick={() => { setEditRole(employee.role || 'employee'); setEditMode(true); }}>
                   <Edit2 className="w-3.5 h-3.5" /> Edit Role
@@ -286,6 +334,25 @@ export default function EmployeeProfile() {
           </CardContent>
         </Card>
       </div>
+
+      <AlertDialog open={resetPinOpen} onOpenChange={setResetPinOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>
+              Reset PIN for {employee.full_name || employee.email}?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This clears the saved PIN hash and forces the employee to create a new PIN at next login. You will not see their old or new PIN.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={resettingPin}>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleResetPin} disabled={resettingPin}>
+              {resettingPin ? 'Resetting...' : 'Reset PIN'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }

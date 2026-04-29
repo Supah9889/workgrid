@@ -150,6 +150,7 @@ export default function SuperAdminDashboard() {
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const [createOpen, setCreateOpen] = useState(false);
+  const [showCompleted, setShowCompleted] = useState(false);
 
   const handleRefresh = () => Promise.all([
     queryClient.invalidateQueries({ queryKey: ['dashboard-tasks'] }),
@@ -190,15 +191,19 @@ export default function SuperAdminDashboard() {
     return () => { unsub(); clearTimeout(debounceTimer); };
   }, [queryClient]);
 
-  const unassigned = allTasks.filter(t => !t.assigned_employee);
-  const assigned = allTasks.filter(t => !!t.assigned_employee);
+  const visibleTasks = showCompleted
+    ? allTasks
+    : allTasks.filter(t => t.status !== 'delivered');
+
+  const unassigned = visibleTasks.filter(t => !t.assigned_employee);
+  const assigned = visibleTasks.filter(t => !!t.assigned_employee);
 
   const todayStr = new Date().toISOString().split('T')[0];
   const clockedInToday = clockRecords.filter(r => r.date === todayStr && isOpenClockRecord(r)).length;
   const activeDeliveries = allTasks.filter(t => t.status === 'picked_up' || t.status === 'en_route').length;
   const deliveredToday = allTasks.filter(t => t.status === 'delivered' && (t.updated_date?.startsWith(todayStr) || t.created_date?.startsWith(todayStr))).length;
   const oobAlerts = clockRecords.filter(r => r.date === todayStr && r.flagged).length;
-  const unassignedTasks = allTasks.filter(t => !t.assigned_employee).length;
+  const unassignedTasks = allTasks.filter(t => !t.assigned_employee && t.status !== 'delivered').length;
 
   return (
     <PullToRefresh onRefresh={handleRefresh}>
@@ -208,7 +213,7 @@ export default function SuperAdminDashboard() {
         <h1 className="text-xl font-bold text-white tracking-tight">WorkGrid</h1>
         <p className="text-slate-400 text-xs mt-0.5">
           {format(new Date(), 'EEEE, MMMM d')}
-          {!isLoading && ` · ${allTasks.length} task${allTasks.length !== 1 ? 's' : ''}`}
+          {!isLoading && ` · ${visibleTasks.length} visible task${visibleTasks.length !== 1 ? 's' : ''}`}
           {unassigned.length > 0 && (
             <span className="text-orange-400"> · {unassigned.length} unassigned</span>
           )}
@@ -237,6 +242,17 @@ export default function SuperAdminDashboard() {
 
       {/* Task list */}
       <div className="px-4 py-4 pb-24 space-y-3">
+        <button
+          type="button"
+          onClick={() => setShowCompleted(v => !v)}
+          className={`w-full rounded-lg border px-3 py-3 text-sm font-medium transition-colors ${
+            showCompleted
+              ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
+              : 'border-slate-700 bg-slate-800/50 text-slate-400'
+          }`}
+        >
+          Show Completed
+        </button>
         {isError ? (
           <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
             <p className="text-red-400 font-medium">Failed to load tasks</p>
@@ -246,10 +262,14 @@ export default function SuperAdminDashboard() {
           <div className="flex justify-center py-24">
             <div className="w-8 h-8 border-4 border-slate-700 border-t-blue-500 rounded-full animate-spin" />
           </div>
-        ) : allTasks.length === 0 ? (
+        ) : visibleTasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
-            <p className="text-slate-400 font-medium text-lg">No tasks yet</p>
-            <p className="text-slate-600 text-sm mt-1">Tap + to create the first delivery</p>
+            <p className="text-slate-400 font-medium text-lg">
+              {showCompleted ? 'No completed tasks' : 'No active tasks'}
+            </p>
+            <p className="text-slate-600 text-sm mt-1">
+              {showCompleted ? 'Completed tasks will appear here.' : 'Tap + to create the first task'}
+            </p>
           </div>
         ) : (
           <>

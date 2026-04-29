@@ -28,6 +28,7 @@ export default function TaskBoard() {
   const [editTask, setEditTask] = useState(null);
   const [deleteTask, setDeleteTask] = useState(null);
   const [view, setView] = useState('list');
+  const [showCompleted, setShowCompleted] = useState(false);
 
   const isSuperAdmin = user?.role === 'super_admin' || user?.role === 'owner';
 
@@ -68,11 +69,9 @@ export default function TaskBoard() {
     return unsubscribe;
   }, [queryClient]);
 
-  const todayStr = today.toISOString().split('T')[0];
-  const visibleTasks = allTasks.filter(t => {
-    if (t.status !== 'delivered') return true;
-    return t.updated_date?.startsWith(todayStr) || t.created_date?.startsWith(todayStr);
-  });
+  const visibleTasks = showCompleted
+    ? allTasks
+    : allTasks.filter(t => t.status !== 'delivered');
 
   const sorted = [...visibleTasks].sort((a, b) => {
     const aU = !a.assigned_employee ? 0 : 1;
@@ -119,19 +118,32 @@ export default function TaskBoard() {
         </div>
       </div>
 
-      <div className="relative mb-4">
-        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-        <Input
-          className="pl-9"
-          placeholder="Search by title, employee, or address..."
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-        />
+      <div className="mb-4 flex flex-col gap-3 sm:flex-row sm:items-center">
+        <div className="relative flex-1">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+          <Input
+            className="pl-9"
+            placeholder="Search by title, employee, or address..."
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+          />
+        </div>
+        <button
+          type="button"
+          onClick={() => setShowCompleted(v => !v)}
+          className={`h-10 rounded-md border px-3 text-sm font-medium transition-colors ${
+            showCompleted
+              ? 'bg-primary text-primary-foreground border-primary'
+              : 'border-border text-muted-foreground hover:bg-muted'
+          }`}
+        >
+          Show Completed
+        </button>
       </div>
 
       {view === 'map' && (
         <div className="mb-6">
-          <DeliveryMap tasks={allTasks} />
+          <DeliveryMap tasks={visibleTasks} />
         </div>
       )}
 

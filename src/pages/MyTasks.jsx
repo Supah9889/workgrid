@@ -239,6 +239,7 @@ const STATUS_ORDER = ['pending', 'picked_up', 'en_route', 'delivered'];
 export default function MyTasks() {
   const { user } = useAuth();
   const queryClient = useQueryClient();
+  const [showCompleted, setShowCompleted] = useState(false);
 
   const refresh = () => queryClient.invalidateQueries({ queryKey: ['my-tasks', user?.email] });
 
@@ -261,13 +262,17 @@ export default function MyTasks() {
     return unsub;
   }, [user?.email, queryClient]);
 
+  const visibleTasks = showCompleted
+    ? tasks
+    : tasks.filter(t => t.status !== 'delivered');
+
   const grouped = STATUS_ORDER.reduce((acc, s) => {
-    acc[s] = tasks.filter(t => t.status === s);
+    acc[s] = visibleTasks.filter(t => t.status === s);
     return acc;
   }, {});
 
   const active = tasks.filter(t => t.status !== 'delivered');
-  const delivered = tasks.filter(t => t.status === 'delivered');
+  const delivered = showCompleted ? tasks.filter(t => t.status === 'delivered') : [];
 
   return (
     <PullToRefresh onRefresh={refresh}>
@@ -277,7 +282,7 @@ export default function MyTasks() {
         <h1 className="text-xl font-bold text-white tracking-tight">My Deliveries</h1>
         <p className="text-slate-400 text-xs mt-0.5">
           {format(new Date(), 'EEEE, MMMM d')}
-          {!isLoading && ` · ${tasks.length} task${tasks.length !== 1 ? 's' : ''} assigned`}
+          {!isLoading && ` - ${active.length} active task${active.length !== 1 ? 's' : ''}`}
         </p>
       </div>
 
@@ -300,6 +305,17 @@ export default function MyTasks() {
       {isOnline && !isSyncing && pendingCount === 0 && false && null /* hidden when all clear */}
 
       <div className="px-4 py-4 pb-28 space-y-3">
+        <button
+          type="button"
+          onClick={() => setShowCompleted(v => !v)}
+          className={`w-full rounded-lg border px-3 py-3 text-sm font-medium transition-colors ${
+            showCompleted
+              ? 'border-emerald-500/40 bg-emerald-500/10 text-emerald-300'
+              : 'border-slate-700 bg-slate-800/50 text-slate-400'
+          }`}
+        >
+          Show Completed
+        </button>
         {isError ? (
           <div className="flex flex-col items-center justify-center py-24 text-center gap-3">
             <p className="text-red-400 font-medium">Failed to load tasks</p>
@@ -309,13 +325,17 @@ export default function MyTasks() {
           <div className="flex justify-center py-24">
             <div className="w-8 h-8 border-4 border-slate-700 border-t-blue-500 rounded-full animate-spin" />
           </div>
-        ) : tasks.length === 0 ? (
+        ) : visibleTasks.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-24 text-center">
             <div className="w-16 h-16 rounded-2xl bg-slate-800 flex items-center justify-center mb-4">
               <ListTodo className="w-7 h-7 text-slate-500" />
             </div>
-            <p className="text-slate-300 font-semibold text-lg">No deliveries yet</p>
-            <p className="text-slate-500 text-sm mt-1">Your manager will assign tasks here.</p>
+            <p className="text-slate-300 font-semibold text-lg">
+              {showCompleted ? 'No completed deliveries' : 'No active deliveries'}
+            </p>
+            <p className="text-slate-500 text-sm mt-1">
+              {showCompleted ? 'Completed work will appear here.' : 'Your current work will appear here.'}
+            </p>
           </div>
         ) : (
           <>

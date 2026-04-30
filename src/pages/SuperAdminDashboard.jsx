@@ -3,14 +3,15 @@ import PullToRefresh from '@/components/ui/PullToRefresh';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { base44 } from '@/api/base44Client';
-import { Plus, MapPin, Clock, Package, Building2, ChevronDown, ChevronUp, User } from 'lucide-react';
+import { Plus, MapPin, Clock, Package, Building2, ChevronDown, ChevronUp, User, Trash2 } from 'lucide-react';
 import { PriorityBadge, StatusBadge } from '@/components/tasks/TaskBadges';
 import CreateTaskDialog from '@/components/tasks/CreateTaskDialog';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from '@/components/ui/alert-dialog';
 import { format } from 'date-fns';
 import { isOpenClockRecord } from '@/lib/clockRecords';
 import { listEmployeeProfiles } from '@/lib/employeeProfiles';
 
-function TaskCard({ task, employees }) {
+function TaskCard({ task, employees, onDelete }) {
   const [expanded, setExpanded] = useState(false);
   const isUnassigned = !task.assigned_employee;
   const empName = task.assigned_employee_name || (employees.find(e => e.email === task.assigned_employee)?.full_name) || 'Unassigned';
@@ -140,6 +141,12 @@ function TaskCard({ task, employees }) {
               <p className="text-sm text-slate-300 bg-slate-900/60 rounded-lg p-2.5">{task.notes}</p>
             </div>
           )}
+          <button
+            onClick={(e) => { e.stopPropagation(); onDelete(task); }}
+            className="flex items-center gap-1.5 text-xs text-red-400 hover:text-red-300 hover:bg-red-500/10 border border-red-500/30 rounded-lg px-3 py-2 w-full justify-center transition-colors mt-1"
+          >
+            <Trash2 className="w-3.5 h-3.5" /> Delete Task
+          </button>
         </div>
       )}
     </div>
@@ -151,6 +158,15 @@ export default function SuperAdminDashboard() {
   const navigate = useNavigate();
   const [createOpen, setCreateOpen] = useState(false);
   const [showCompleted, setShowCompleted] = useState(false);
+  const [deleteTask, setDeleteTask] = useState(null);
+
+  const handleDelete = async () => {
+    if (!deleteTask) return;
+    await base44.entities.Task.delete(deleteTask.id);
+    setDeleteTask(null);
+    queryClient.invalidateQueries({ queryKey: ['dashboard-tasks'] });
+    queryClient.invalidateQueries({ queryKey: ['tasks-today'] });
+  };
 
   const handleRefresh = () => Promise.all([
     queryClient.invalidateQueries({ queryKey: ['dashboard-tasks'] }),
@@ -280,7 +296,7 @@ export default function SuperAdminDashboard() {
                 </p>
                 <div className="space-y-2">
                   {unassigned.map(t => (
-                    <TaskCard key={t.id} task={t} employees={employees} />
+                    <TaskCard key={t.id} task={t} employees={employees} onDelete={setDeleteTask} />
                   ))}
                 </div>
               </div>
@@ -295,7 +311,7 @@ export default function SuperAdminDashboard() {
                 )}
                 <div className="space-y-2">
                   {assigned.map(t => (
-                    <TaskCard key={t.id} task={t} employees={employees} />
+                    <TaskCard key={t.id} task={t} employees={employees} onDelete={setDeleteTask} />
                   ))}
                 </div>
               </div>
@@ -318,6 +334,21 @@ export default function SuperAdminDashboard() {
         employees={employees}
         onCreated={() => queryClient.invalidateQueries({ queryKey: ['dashboard-tasks'] })}
       />
+
+      <AlertDialog open={!!deleteTask} onOpenChange={open => !open && setDeleteTask(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Task</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <strong>{deleteTask?.title}</strong>? This cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction onClick={handleDelete} className="bg-destructive hover:bg-destructive/90 text-destructive-foreground">Delete</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
     </PullToRefresh>
   );

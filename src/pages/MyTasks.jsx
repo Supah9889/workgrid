@@ -216,13 +216,24 @@ function DeliveryCard({ task, onUpdated, updateTaskStatus }) {
                 </div>
                 {nextStep && (
                   <button
-                    onClick={async () => {
-                      await updateTaskStatus(task.id, { status: nextStep.key });
-                      onUpdated();
+                    onClick={async (e) => {
+                      e.stopPropagation();
+                      if (saving) return;
+                      setSaving(true);
+                      try {
+                        await updateTaskStatus(task.id, { status: nextStep.key });
+                        onUpdated();
+                      } catch (err) {
+                        console.error('[MyTasks] Status advance failed:', err);
+                        toast({ title: 'Failed to update status', description: err.message || 'Please try again.', variant: 'destructive' });
+                      } finally {
+                        setSaving(false);
+                      }
                     }}
-                    className="w-full py-2 rounded-lg bg-blue-600 hover:bg-blue-500 text-white text-sm font-medium transition-colors"
+                    disabled={saving}
+                    className="w-full py-2 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-medium transition-colors"
                   >
-                    Mark as {nextStep.label}
+                    {saving ? 'Updating...' : `Mark as ${nextStep.label}`}
                   </button>
                 )}
               </div>

@@ -76,6 +76,44 @@
                 { "data.role": null },
                 { "data.role": { "$exists": false } }
               ]
+            },
+            {
+              "$or": [
+                { "data.status": "active" },
+                { "data.status": "inactive" },
+                { "data.status": null },
+                { "data.status": { "$exists": false } }
+              ]
+            }
+          ]
+        },
+        {
+          "$and": [
+            { "user_condition": { "role": "user" } },
+            { "data.email": "{{user.email}}" },
+            { "data.role": "employee" },
+            {
+              "$or": [
+                { "data.status": "active" },
+                { "data.status": "inactive" },
+                { "data.status": null },
+                { "data.status": { "$exists": false } }
+              ]
+            }
+          ]
+        },
+        {
+          "$and": [
+            { "user_condition": { "data.role": "user" } },
+            { "data.email": "{{user.email}}" },
+            { "data.role": "employee" },
+            {
+              "$or": [
+                { "data.status": "active" },
+                { "data.status": "inactive" },
+                { "data.status": null },
+                { "data.status": { "$exists": false } }
+              ]
             }
           ]
         },

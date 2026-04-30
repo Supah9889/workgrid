@@ -15,6 +15,10 @@ export function normalizeEmail(email) {
   return (email || '').trim().toLowerCase();
 }
 
+function getAuthEmailForWrite(email) {
+  return (email || '').trim();
+}
+
 export function isAdminProfile(profile) {
   return ADMIN_ROLES.includes(profile?.role);
 }
@@ -239,6 +243,7 @@ export async function ensureEmployeeProfileForAuthUser(authUser) {
 
 export async function saveOwnEmployeeProfile({ authEmail, fullName, contactPhone, pinHash }) {
   const normalizedEmail = normalizeEmail(authEmail);
+  const authEmailForWrite = getAuthEmailForWrite(authEmail);
   if (!normalizedEmail) throw new Error('Authenticated user is missing an email.');
   if (!pinHash) throw new Error('PIN hash is required.');
 
@@ -248,8 +253,8 @@ export async function saveOwnEmployeeProfile({ authEmail, fullName, contactPhone
   const safeFullName = (fullName || '').trim() || normalizedEmail;
   const safeContactPhone = (contactPhone || '').trim() || '0000000000';
   const fullPayload = {
-    email: normalizedEmail,
-    contact_email: normalizedEmail,
+    email: authEmailForWrite,
+    contact_email: authEmailForWrite,
     full_name: safeFullName,
     contact_phone: safeContactPhone,
     pin_hash: pinHash,
@@ -258,8 +263,8 @@ export async function saveOwnEmployeeProfile({ authEmail, fullName, contactPhone
     status: 'active',
   };
   const updatePayload = {
-    email: normalizedEmail,
-    contact_email: normalizedEmail,
+    email: authEmailForWrite,
+    contact_email: authEmailForWrite,
     full_name: safeFullName,
     contact_phone: safeContactPhone,
     pin_hash: pinHash,
@@ -278,6 +283,30 @@ export async function saveOwnEmployeeProfile({ authEmail, fullName, contactPhone
   } catch (error) {
     const info = getErrorInfo(error);
     error.operation = operation;
+    if (operation === 'create') {
+      const retryRecords = await filterEmployeeProfiles(normalizedEmail);
+      const retryExisting = normalizeProfile(sortBestProfile(retryRecords));
+      if (retryExisting?.id) {
+        console.warn('[EmployeeProfile] create failed but profile now exists; retrying as update.', {
+          authEmail,
+          normalizedEmail,
+          targetProfileId: retryExisting.id,
+        });
+        const retryUpdatePayload = {
+          email: authEmailForWrite,
+          contact_email: authEmailForWrite,
+          full_name: safeFullName,
+          contact_phone: safeContactPhone,
+          pin_hash: pinHash,
+          has_onboarded: true,
+          status: retryExisting.status || 'active',
+        };
+        if (!isAdminProfile(retryExisting)) {
+          retryUpdatePayload.role = 'employee';
+        }
+        return normalizeProfile(await base44.entities.EmployeeProfile.update(retryExisting.id, retryUpdatePayload));
+      }
+    }
     console.error('[EmployeeProfile] onboarding profile save failed', {
       operation,
       authEmail,

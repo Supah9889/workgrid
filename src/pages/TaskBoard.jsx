@@ -40,6 +40,7 @@ export default function TaskBoard() {
       await base44.entities.Task.delete(deleteTask.id);
       setDeleteTask(null);
       queryClient.invalidateQueries({ queryKey: ['tasks-today'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-tasks'] });
     } catch (err) {
       console.error('[TaskBoard] Delete failed:', err);
       toast({ title: 'Failed to delete task', description: err.message || 'Please try again.', variant: 'destructive' });

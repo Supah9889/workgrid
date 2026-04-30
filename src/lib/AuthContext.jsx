@@ -154,10 +154,11 @@ export const AuthProvider = ({ children }) => {
   const saveOnboardingProfile = async ({ fullName, contactPhone, pinHash }) => {
     const authUser = await base44.auth.me();
     const normalizedEmail = normalizeEmail(authUser.email);
+    const safeFullName = (fullName || '').trim() || authUser?.full_name || authUser?.name || normalizedEmail;
 
     const saved = await saveOwnEmployeeProfile({
-      authEmail: normalizedEmail,
-      fullName,
+      authEmail: authUser.email,
+      fullName: safeFullName,
       contactPhone,
       pinHash,
     });

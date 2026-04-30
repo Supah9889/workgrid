@@ -1,6 +1,6 @@
 import { base44 } from '@/api/base44Client';
 
-const VALID_ROLES = ['owner', 'super_admin', 'operator', 'employee'];
+const VALID_ROLES = ['owner', 'super_admin', 'operator', 'employee', 'user'];
 const ADMIN_ROLES = ['owner', 'super_admin', 'operator'];
 const PIN_RESET_ROLES = ['owner', 'super_admin'];
 const ROLE_PRIORITY = {
@@ -8,6 +8,7 @@ const ROLE_PRIORITY = {
   super_admin: 3,
   operator: 2,
   employee: 1,
+  user: 1,
 };
 
 export function normalizeEmail(email) {
@@ -42,6 +43,7 @@ function getSafeErrorObject(error) {
 }
 
 function sanitizeRole(role) {
+  if (role === 'user') return 'employee';
   return VALID_ROLES.includes(role) ? role : 'employee';
 }
 
@@ -242,36 +244,46 @@ export async function saveOwnEmployeeProfile({ authEmail, fullName, contactPhone
 
   const records = await filterEmployeeProfiles(normalizedEmail);
   const existing = normalizeProfile(sortBestProfile(records));
-  const basePayload = {
+  const operation = existing?.id ? 'update' : 'create';
+  const safeFullName = (fullName || '').trim() || normalizedEmail;
+  const safeContactPhone = (contactPhone || '').trim() || '0000000000';
+  const fullPayload = {
     email: normalizedEmail,
-    full_name: fullName,
-    contact_phone: contactPhone,
+    contact_email: normalizedEmail,
+    full_name: safeFullName,
+    contact_phone: safeContactPhone,
+    pin_hash: pinHash,
+    has_onboarded: true,
+    role: 'employee',
+    status: 'active',
+  };
+  const updatePayload = {
+    email: normalizedEmail,
+    contact_email: normalizedEmail,
+    full_name: safeFullName,
+    contact_phone: safeContactPhone,
     pin_hash: pinHash,
     has_onboarded: true,
     status: existing?.status || 'active',
   };
-  const createPayload = {
-    ...basePayload,
-    role: 'employee',
-    status: 'active',
-  };
-  const updatePayload = isAdminProfile(existing)
-    ? basePayload
-    : {
-        ...basePayload,
-        role: 'employee',
-      };
+  if (!isAdminProfile(existing)) {
+    updatePayload.role = 'employee';
+  }
 
   try {
     if (existing?.id) {
       return normalizeProfile(await base44.entities.EmployeeProfile.update(existing.id, updatePayload));
     }
-    return normalizeProfile(await base44.entities.EmployeeProfile.create(createPayload));
+    return normalizeProfile(await base44.entities.EmployeeProfile.create(fullPayload));
   } catch (error) {
     const info = getErrorInfo(error);
+    error.operation = operation;
     console.error('[EmployeeProfile] onboarding profile save failed', {
-      operation: existing?.id ? 'update' : 'create',
+      operation,
+      authEmail,
       email: normalizedEmail,
+      normalizedEmail,
+      payloadKeys: Object.keys(existing?.id ? updatePayload : fullPayload),
       targetProfileId: existing?.id || null,
       status: info.status,
       message: info.message,

@@ -3,6 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/lib/AuthContext';
 import { Hexagon, ChevronLeft, Check, Loader2 } from 'lucide-react';
 
+const BUILD_MARKER = 'WorkGrid build: onboarding-emergency-fix 2026-04-30';
+const ADMIN_ROLES = ['owner', 'super_admin', 'operator'];
+
 async function hashPin(pin) {
   const encoder = new TextEncoder();
   const data = encoder.encode(pin);
@@ -79,6 +82,7 @@ export default function Onboarding() {
     if (!pinsMatch) { setError('PINs do not match'); return; }
     setSaving(true);
     try {
+      console.info(BUILD_MARKER);
       const pinHash = await hashPin(pin);
       const trimmedName = fullName.trim();
       const trimmedPhone = phone.trim();
@@ -87,24 +91,26 @@ export default function Onboarding() {
         email: user?.email,
         hasUserId: !!user?.id,
       });
-      await saveOnboardingProfile({
+      const savedUser = await saveOnboardingProfile({
         fullName: trimmedName,
         contactPhone: trimmedPhone,
         pinHash,
       });
+      const normalizedEmail = savedUser?.email || user?.email || '';
       sessionStorage.setItem('pin_verified', 'true');
-      sessionStorage.setItem('pin_verified_email', user?.email || '');
+      sessionStorage.setItem('pin_verified_email', normalizedEmail);
       setStep(4);
       setTimeout(() => {
         setVisible(false);
-        navigate('/');
+        navigate(ADMIN_ROLES.includes(savedUser?.role) ? '/dashboard' : '/my-tasks');
       }, 1500);
     } catch (e) {
       console.error('[Onboarding] Save failed:', e);
       const lowerMessage = e?.message?.toLowerCase() || '';
       const status = e?.status || e?.response?.status || e?.data?.status;
+      const operation = e?.operation === 'update' ? 'update' : 'create';
       const msg = status === 401 || status === 403 || lowerMessage.includes('forbidden') || lowerMessage.includes('unauthorized') || lowerMessage.includes('permission')
-        ? 'Profile could not be saved because account setup permissions are blocking this user. Please contact admin.'
+        ? `Profile ${operation} was blocked because account setup permissions are blocking this user. Please contact admin.`
         : lowerMessage.includes('network') || lowerMessage.includes('fetch')
         ? 'Network error - check your connection and try again.'
         : 'Something went wrong - please try again.';

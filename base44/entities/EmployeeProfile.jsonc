@@ -29,7 +29,8 @@
         "owner",
         "super_admin",
         "operator",
-        "employee"
+        "employee",
+        "user"
       ],
       "default": "employee"
     },
@@ -71,6 +72,7 @@
             {
               "$or": [
                 { "data.role": "employee" },
+                { "data.role": "user" },
                 { "data.role": null },
                 { "data.role": { "$exists": false } }
               ]
@@ -96,6 +98,7 @@
             {
               "$or": [
                 { "data.role": "employee" },
+                { "data.role": "user" },
                 { "data.role": null },
                 { "data.role": { "$exists": false } }
               ]

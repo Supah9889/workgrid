@@ -29,6 +29,18 @@ function getErrorInfo(error) {
   };
 }
 
+function getSafeErrorObject(error) {
+  if (!error || typeof error !== 'object') return { value: String(error) };
+
+  return {
+    name: error.name || null,
+    message: error.message || null,
+    status: error.status || error.response?.status || error.data?.status || null,
+    code: error.code || error.data?.code || null,
+    data: error.data || error.response?.data || null,
+  };
+}
+
 function sanitizeRole(role) {
   return VALID_ROLES.includes(role) ? role : 'employee';
 }
@@ -230,28 +242,40 @@ export async function saveOwnEmployeeProfile({ authEmail, fullName, contactPhone
 
   const records = await filterEmployeeProfiles(normalizedEmail);
   const existing = normalizeProfile(sortBestProfile(records));
-  const payload = {
+  const basePayload = {
     email: normalizedEmail,
     full_name: fullName,
     contact_phone: contactPhone,
     pin_hash: pinHash,
     has_onboarded: true,
-    role: isAdminProfile(existing) ? existing.role : 'employee',
     status: existing?.status || 'active',
   };
+  const createPayload = {
+    ...basePayload,
+    role: 'employee',
+    status: 'active',
+  };
+  const updatePayload = isAdminProfile(existing)
+    ? basePayload
+    : {
+        ...basePayload,
+        role: 'employee',
+      };
 
   try {
     if (existing?.id) {
-      return normalizeProfile(await base44.entities.EmployeeProfile.update(existing.id, payload));
+      return normalizeProfile(await base44.entities.EmployeeProfile.update(existing.id, updatePayload));
     }
-    return normalizeProfile(await base44.entities.EmployeeProfile.create(payload));
+    return normalizeProfile(await base44.entities.EmployeeProfile.create(createPayload));
   } catch (error) {
     const info = getErrorInfo(error);
     console.error('[EmployeeProfile] onboarding profile save failed', {
+      operation: existing?.id ? 'update' : 'create',
       email: normalizedEmail,
       targetProfileId: existing?.id || null,
       status: info.status,
       message: info.message,
+      error: getSafeErrorObject(error),
     });
     throw error;
   }

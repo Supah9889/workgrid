@@ -162,29 +162,22 @@ export const AuthProvider = ({ children }) => {
       pinHash,
     });
 
-    if (saved?.has_onboarded !== true || !saved?.pin_hash) {
-      console.error('[AuthContext] Onboarding save returned incomplete EmployeeProfile.', {
-        email: normalizedEmail,
-        targetProfileId: saved?.id || null,
-        hasOnboarded: saved?.has_onboarded,
-        hasPin: !!saved?.pin_hash,
-      });
-      throw new Error('Profile save did not persist setup fields.');
-    }
-
     completeOnboarding(saved);
 
-    const reloaded = await reloadCurrentUser();
-    if (reloaded?.has_onboarded !== true || !reloaded?.pin_hash) {
-      console.error('[AuthContext] Reloaded EmployeeProfile is still incomplete after onboarding save.', {
-        email: normalizedEmail,
-        targetProfileId: reloaded?.profile_id || null,
-        hasOnboarded: reloaded?.has_onboarded,
-        hasPin: !!reloaded?.pin_hash,
-      });
-      throw new Error('Profile saved but setup could not be confirmed.');
-    }
-    return reloaded;
+    const mergedUser = {
+      ...authUser,
+      ...saved,
+      auth_email: normalizedEmail,
+      email: normalizeEmail(saved?.email || normalizedEmail),
+      profile_id: saved?.id,
+    };
+    setUser(mergedUser);
+    setIsAuthenticated(true);
+    setNeedsOnboarding(false);
+    setIsLoadingAuth(false);
+    setAuthChecked(true);
+
+    return mergedUser;
   };
 
   const logout = (shouldRedirect = true) => {

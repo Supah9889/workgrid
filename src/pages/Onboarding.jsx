@@ -104,7 +104,7 @@ export default function Onboarding() {
       const lowerMessage = e?.message?.toLowerCase() || '';
       const status = e?.status || e?.response?.status || e?.data?.status;
       const msg = status === 401 || status === 403 || lowerMessage.includes('forbidden') || lowerMessage.includes('unauthorized') || lowerMessage.includes('permission')
-        ? 'Profile save was blocked. Please contact admin.'
+        ? 'Profile could not be saved because account setup permissions are blocking this user. Please contact admin.'
         : lowerMessage.includes('network') || lowerMessage.includes('fetch')
         ? 'Network error - check your connection and try again.'
         : 'Something went wrong - please try again.';

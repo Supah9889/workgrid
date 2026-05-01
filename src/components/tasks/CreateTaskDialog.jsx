@@ -56,7 +56,7 @@ export default function CreateTaskDialog({ open, onOpenChange, employees = [], o
   };
 
   const handleSubmit = async () => {
-    if (!form.title.trim() || !form.assigned_employee || saving) return;
+    if (!form.title.trim() || saving) return;
     setSaving(true);
     try {
       const task = await base44.entities.Task.create({ ...form, status: 'pending' });
@@ -71,7 +71,7 @@ export default function CreateTaskDialog({ open, onOpenChange, employees = [], o
   };
 
   const inputCls = 'bg-slate-800 border-slate-700 text-slate-100 placeholder:text-slate-500 focus:border-blue-500';
-  const canSubmit = !!form.title.trim() && !!form.assigned_employee && !saving;
+  const canSubmit = !!form.title.trim() && !saving;
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
@@ -91,10 +91,10 @@ export default function CreateTaskDialog({ open, onOpenChange, employees = [], o
               />
             </Field>
 
-            <Field label="Assign To" required>
+            <Field label="Assign To">
               <Select value={form.assigned_employee} onValueChange={handleEmployeeChange}>
                 <SelectTrigger className={`${inputCls} h-11`}>
-                  <SelectValue placeholder="Choose an employee" />
+                  <SelectValue placeholder="Unassigned (optional)" />
                 </SelectTrigger>
                 <SelectContent className="bg-slate-800 border-slate-700">
                   {employees.filter(e => e.role !== 'super_admin').map(emp => (
@@ -202,7 +202,7 @@ export default function CreateTaskDialog({ open, onOpenChange, employees = [], o
           </Section>
 
           {!canSubmit && (
-            <p className="text-sm text-blue-200">Please enter a task title and assign it</p>
+            <p className="text-sm text-blue-200">Please enter a task title to continue</p>
           )}
 
           <div className="flex flex-col gap-3 pt-2 sm:flex-row">

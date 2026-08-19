@@ -34,42 +34,9 @@
       "type": "string"
     }
   },
-  "rls": {
-    "create": {
-      "$and": [
-        { "data.role": "employee" }
-      ]
-    },
-    "read": {
-      "$or": [
-        { "data.email": "{{user.email}}" },
-        { "user_condition": { "role": "admin" } },
-        { "user_condition": { "data.role": { "$in": ["owner", "super_admin", "operator"] } } }
-      ]
-    },
-    "update": {
-      "$or": [
-        {
-          "$and": [
-            { "data.email": "{{user.email}}" },
-            {
-              "$or": [
-                { "data.role": "employee" },
-                { "data.role": null },
-                { "data.role": { "$exists": false } }
-              ]
-            }
-          ]
-        },
-        { "user_condition": { "role": "admin" } },
-        { "user_condition": { "data.role": { "$in": ["owner", "super_admin"] } } }
-      ]
-    },
-    "delete": {
-      "$or": [
-        { "user_condition": { "role": "admin" } },
-        { "user_condition": { "data.role": { "$in": ["owner", "super_admin"] } } }
-      ]
-    }
-  }
+  "required": [
+    "pin_hash",
+    "contact_phone",
+    "contact_email"
+  ]
 }

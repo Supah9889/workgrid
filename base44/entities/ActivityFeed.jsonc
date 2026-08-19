@@ -48,28 +48,74 @@
   "rls": {
     "create": {
       "$or": [
-        { "data.actor_email": "{{user.email}}" },
-        { "user_condition": { "role": "admin" } },
-        { "user_condition": { "data.role": { "$in": ["owner", "super_admin", "operator", "employee"] } } }
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "operator"
+          }
+        }
       ]
     },
     "read": {
       "$or": [
-        { "data.actor_email": "{{user.email}}" },
-        { "user_condition": { "role": "admin" } },
-        { "user_condition": { "data.role": { "$in": ["owner", "super_admin", "operator"] } } }
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "operator"
+          }
+        },
+        {
+          "created_by": "{{user.email}}"
+        },
+        {
+          "data.actor_email": "{{user.email}}"
+        }
       ]
     },
     "update": {
       "$or": [
-        { "user_condition": { "role": "admin" } },
-        { "user_condition": { "data.role": { "$in": ["owner", "super_admin"] } } }
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        }
       ]
     },
     "delete": {
       "$or": [
-        { "user_condition": { "role": "admin" } },
-        { "user_condition": { "data.role": { "$in": ["owner", "super_admin"] } } }
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        }
       ]
     }
   }

@@ -38,13 +38,6 @@
       },
       "description": "Array of emails who have read this message",
       "default": []
-    },
-    "participant_emails": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "description": "Conversation participants copied onto private messages for RLS"
     }
   },
   "required": [
@@ -54,36 +47,69 @@
     "chat_type"
   ],
   "rls": {
-    "create": {
-      "$or": [
-        { "data.sender_email": "{{user.email}}" },
-        { "user_condition": { "role": "admin" } },
-        { "user_condition": { "data.role": { "$in": ["owner", "super_admin", "operator"] } } }
-      ]
-    },
+    "create": {},
     "read": {
       "$or": [
-        { "data.chat_type": "general" },
-        { "data.sender_email": "{{user.email}}" },
-        { "data.participant_emails": "{{user.email}}" },
-        { "user_condition": { "role": "admin" } },
-        { "user_condition": { "data.role": { "$in": ["owner", "super_admin", "operator"] } } }
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "operator"
+          }
+        },
+        {
+          "data.chat_type": "general"
+        },
+        {
+          "data.conversation_id": {
+            "$exists": true
+          },
+          "data.participant_emails": "{{user.email}}"
+        }
       ]
     },
     "update": {
       "$or": [
-        { "data.chat_type": "general" },
-        { "data.sender_email": "{{user.email}}" },
-        { "data.participant_emails": "{{user.email}}" },
-        { "user_condition": { "role": "admin" } },
-        { "user_condition": { "data.role": { "$in": ["owner", "super_admin", "operator"] } } }
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "operator"
+          }
+        },
+        {
+          "data.sender_email": "{{user.email}}"
+        }
       ]
     },
     "delete": {
       "$or": [
-        { "data.sender_email": "{{user.email}}" },
-        { "user_condition": { "role": "admin" } },
-        { "user_condition": { "data.role": { "$in": ["owner", "super_admin"] } } }
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        }
       ]
     }
   }

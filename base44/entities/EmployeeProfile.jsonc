@@ -4,35 +4,39 @@
   "properties": {
     "email": {
       "type": "string",
-      "description": "Normalized Base44 auth email for this app profile"
+      "description": "Employee login email (normalized lowercase)"
     },
     "full_name": {
-      "type": "string"
+      "type": "string",
+      "description": "Display name"
     },
     "contact_phone": {
-      "type": "string"
+      "type": "string",
+      "description": "Phone number for alerts"
     },
     "contact_email": {
       "type": "string",
-      "description": "Alert email override; login email is used when blank"
+      "description": "Alert email (overrides login email if set)"
     },
     "pin_hash": {
-      "type": "string"
+      "type": "string",
+      "description": "SHA-256 hash of the employee's 4-digit PIN"
     },
     "has_onboarded": {
       "type": "boolean",
-      "default": false
+      "default": false,
+      "description": "True once the employee completes onboarding setup"
     },
     "role": {
       "type": "string",
       "enum": [
-        "owner",
-        "super_admin",
-        "operator",
         "employee",
-        "user"
+        "operator",
+        "super_admin",
+        "owner"
       ],
-      "default": "employee"
+      "default": "employee",
+      "description": "App role for this profile"
     },
     "status": {
       "type": "string",
@@ -40,24 +44,12 @@
         "active",
         "inactive"
       ],
-      "default": "active"
+      "default": "active",
+      "description": "Account status"
     },
     "photo_url": {
-      "type": "string"
-    },
-    "deletion_requested": {
-      "type": "boolean",
-      "default": false,
-      "description": "True when the user requested WorkGrid profile deletion"
-    },
-    "deletion_requested_at": {
       "type": "string",
-      "format": "date-time",
-      "description": "Timestamp when the user requested profile deletion"
-    },
-    "deletion_request_note": {
-      "type": "string",
-      "description": "Plain-language deletion request status note"
+      "description": "Profile photo URL"
     }
   },
   "required": [
@@ -67,97 +59,68 @@
     "create": {
       "$or": [
         {
-          "$and": [
-            { "data.email": "{{user.email}}" },
-            {
-              "$or": [
-                { "data.role": "employee" },
-                { "data.role": "user" },
-                { "data.role": null },
-                { "data.role": { "$exists": false } }
-              ]
-            },
-            {
-              "$or": [
-                { "data.status": "active" },
-                { "data.status": "inactive" },
-                { "data.status": null },
-                { "data.status": { "$exists": false } }
-              ]
-            }
-          ]
+          "user_condition": {
+            "role": "super_admin"
+          }
         },
         {
-          "$and": [
-            { "user_condition": { "role": "user" } },
-            { "data.email": "{{user.email}}" },
-            { "data.role": "employee" },
-            {
-              "$or": [
-                { "data.status": "active" },
-                { "data.status": "inactive" },
-                { "data.status": null },
-                { "data.status": { "$exists": false } }
-              ]
-            }
-          ]
-        },
-        {
-          "$and": [
-            { "user_condition": { "data.role": "user" } },
-            { "data.email": "{{user.email}}" },
-            { "data.role": "employee" },
-            {
-              "$or": [
-                { "data.status": "active" },
-                { "data.status": "inactive" },
-                { "data.status": null },
-                { "data.status": { "$exists": false } }
-              ]
-            }
-          ]
-        },
-        { "user_condition": { "role": "admin" } },
-        { "user_condition": { "data.role": { "$in": ["owner", "super_admin"] } } }
+          "user_condition": {
+            "role": "owner"
+          }
+        }
       ]
     },
     "read": {
       "$or": [
-        { "data.email": "{{user.email}}" },
-        { "user_condition": { "role": "admin" } },
-        { "user_condition": { "data.role": { "$in": ["owner", "super_admin", "operator"] } } }
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "operator"
+          }
+        },
+        {
+          "data.email": "{{user.email}}"
+        }
       ]
     },
     "update": {
       "$or": [
         {
-          "$and": [
-            { "data.email": "{{user.email}}" },
-            {
-              "$or": [
-                { "data.role": "employee" },
-                { "data.role": "user" },
-                { "data.role": null },
-                { "data.role": { "$exists": false } }
-              ]
-            }
-          ]
+          "user_condition": {
+            "role": "super_admin"
+          }
         },
         {
-          "$and": [
-            { "data.email": "{{user.email}}" },
-            { "data.deletion_requested": true },
-            { "data.status": "inactive" }
-          ]
+          "user_condition": {
+            "role": "owner"
+          }
         },
-        { "user_condition": { "role": "admin" } },
-        { "user_condition": { "data.role": { "$in": ["owner", "super_admin"] } } }
+        {
+          "data.email": "{{user.email}}"
+        }
       ]
     },
     "delete": {
       "$or": [
-        { "user_condition": { "role": "admin" } },
-        { "user_condition": { "data.role": { "$in": ["owner", "super_admin"] } } }
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        }
       ]
     }
   }

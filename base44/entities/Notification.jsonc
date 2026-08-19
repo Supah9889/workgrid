@@ -20,11 +20,7 @@
         "info",
         "warning",
         "error",
-        "success",
-        "task",
-        "alert",
-        "clock",
-        "chat"
+        "success"
       ],
       "default": "info"
     },
@@ -45,30 +41,69 @@
   "rls": {
     "create": {
       "$or": [
-        { "data.recipient_email": "{{user.email}}" },
-        { "user_condition": { "role": "admin" } },
-        { "user_condition": { "data.role": { "$in": ["owner", "super_admin", "operator", "employee"] } } }
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "operator"
+          }
+        }
       ]
     },
     "read": {
       "$or": [
-        { "data.recipient_email": "{{user.email}}" },
-        { "user_condition": { "role": "admin" } },
-        { "user_condition": { "data.role": { "$in": ["owner", "super_admin"] } } }
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "data.recipient_email": "{{user.email}}"
+        }
       ]
     },
     "update": {
       "$or": [
-        { "data.recipient_email": "{{user.email}}" },
-        { "user_condition": { "role": "admin" } },
-        { "user_condition": { "data.role": { "$in": ["owner", "super_admin"] } } }
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        },
+        {
+          "data.recipient_email": "{{user.email}}"
+        }
       ]
     },
     "delete": {
       "$or": [
-        { "data.recipient_email": "{{user.email}}" },
-        { "user_condition": { "role": "admin" } },
-        { "user_condition": { "data.role": { "$in": ["owner", "super_admin"] } } }
+        {
+          "user_condition": {
+            "role": "super_admin"
+          }
+        },
+        {
+          "user_condition": {
+            "role": "owner"
+          }
+        }
       ]
     }
   }

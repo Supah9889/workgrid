@@ -10,6 +10,16 @@
       "type": "string",
       "description": "Name of the employee"
     },
+    "clock_in": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Clock in timestamp"
+    },
+    "clock_out": {
+      "type": "string",
+      "format": "date-time",
+      "description": "Clock out timestamp"
+    },
     "date": {
       "type": "string",
       "format": "date",
@@ -86,50 +96,5 @@
   "required": [
     "employee_email",
     "date"
-  ],
-  "rls": {
-    "create": {
-      "$or": [
-        {
-          "$and": [
-            { "data.employee_email": "{{user.email}}" },
-            { "data.punch_out_time": null }
-          ]
-        },
-        { "user_condition": { "role": "admin" } },
-        { "user_condition": { "data.role": { "$in": ["owner", "super_admin", "operator"] } } }
-      ]
-    },
-    "read": {
-      "$or": [
-        { "data.employee_email": "{{user.email}}" },
-        { "user_condition": { "role": "admin" } },
-        { "user_condition": { "data.role": { "$in": ["owner", "super_admin", "operator"] } } }
-      ]
-    },
-    "update": {
-      "$or": [
-        {
-          "$and": [
-            { "data.employee_email": "{{user.email}}" },
-            { "data.punch_out_time": null },
-            {
-              "$or": [
-                { "data.manually_closed": false },
-                { "data.manually_closed": null }
-              ]
-            }
-          ]
-        },
-        { "user_condition": { "role": "admin" } },
-        { "user_condition": { "data.role": { "$in": ["owner", "super_admin", "operator"] } } }
-      ]
-    },
-    "delete": {
-      "$or": [
-        { "user_condition": { "role": "admin" } },
-        { "user_condition": { "data.role": { "$in": ["owner", "super_admin"] } } }
-      ]
-    }
-  }
+  ]
 }
